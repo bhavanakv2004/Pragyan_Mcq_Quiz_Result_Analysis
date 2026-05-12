@@ -1,49 +1,60 @@
 import pandas as pd
 import numpy as np
 
-# ---------------- LOAD DATA ---------------- #
-def load_data(data_file, answer_file):
+# ---------------- LOAD FILE ---------------- #
+def load_file(file):
 
-    df = pd.read_csv(data_file)
-    answer_df = pd.read_csv(answer_file)
+    # CSV
+    if file.name.endswith(".csv"):
+        df = pd.read_csv(file)
 
+    # EXCEL
+    else:
+        df = pd.read_excel(file)
+
+    # Remove spaces
+    df.columns = df.columns.str.strip()
+
+    # Fill empty values
     df.fillna("Not Answered", inplace=True)
 
-    df.columns = df.columns.str.strip()
-    answer_df.columns = answer_df.columns.str.strip()
-
-    return df, answer_df
+    return df
 
 
-# ---------------- VALIDATION ---------------- #
+# ---------------- VALIDATE FILES ---------------- #
 def validate_files(df, answer_df):
 
-    required_cols = ["Name", "Department", "College", "Subject"]
+    # Required columns
+    required_cols = [
+        "Name",
+        "Department",
+        "College",
+        "Subject"
+    ]
 
     for col in required_cols:
 
         if col not in df.columns:
+
             return False, f"❌ Missing column: {col}"
 
-    # Answer file validation
-    required_answer_cols = [
-        "Subject",
+    # Answer key columns
+    answer_required = [
         "Question_ID",
-        "Answer"
+        "Answer",
+        "Subject"
     ]
 
-    for col in required_answer_cols:
+    for col in answer_required:
 
         if col not in answer_df.columns:
+
             return False, f"❌ Missing answer key column: {col}"
 
-    # Duplicate check
+    # Duplicate records
     if df.duplicated().sum() > 0:
-        return False, "❌ Duplicate student records found"
 
-    # Missing values
-    if df.isnull().sum().sum() > 0:
-        return False, "❌ Missing values detected"
+        return False, "❌ Duplicate student records found"
 
     # Valid options
     valid_options = [
@@ -54,23 +65,24 @@ def validate_files(df, answer_df):
         "Not Answered"
     ]
 
-    # Validate answers
     qids = answer_df["Question_ID"].unique()
 
     for qid in qids:
 
         if qid not in df.columns:
+
             return False, f"❌ Missing question column: {qid}"
 
         invalid = ~df[qid].isin(valid_options)
 
         if invalid.any():
-            return False, f"❌ Invalid answers in {qid}"
 
-    return True, "✅ Files Valid"
+            return False, f"❌ Invalid values detected in {qid}"
+
+    return True, "✅ Files validated successfully"
 
 
-# ---------------- SCORE CALCULATION ---------------- #
+# ---------------- CALCULATE SCORE ---------------- #
 def calculate_score(df, answer_df):
 
     scores = []
@@ -95,6 +107,7 @@ def calculate_score(df, answer_df):
             if qid in row.index:
 
                 if row[qid] == correct_ans:
+
                     score += 1
 
         scores.append(score)
@@ -112,23 +125,28 @@ def question_analysis(df, answer_df):
     for _, ans_row in answer_df.iterrows():
 
         qid = ans_row["Question_ID"]
+
         correct_ans = ans_row["Answer"]
 
         if qid in df.columns:
 
-            correct = df[
+            correct = (
                 df[qid] == correct_ans
-            ].shape[0]
+            ).sum()
 
             accuracy = correct / len(df)
 
+            # Difficulty
             if accuracy > 0.8:
+
                 difficulty = "Easy"
 
             elif accuracy >= 0.5:
+
                 difficulty = "Medium"
 
             else:
+
                 difficulty = "Hard"
 
             result.append([
@@ -139,7 +157,11 @@ def question_analysis(df, answer_df):
 
     return pd.DataFrame(
         result,
-        columns=["Question_ID", "Accuracy", "Difficulty"]
+        columns=[
+            "Question_ID",
+            "Accuracy",
+            "Difficulty"
+        ]
     )
 
 
@@ -165,34 +187,30 @@ def attempt_rate(df, answer_df):
 
     return pd.DataFrame(
         result,
-        columns=["Question_ID", "Attempt Rate"]
+        columns=[
+            "Question_ID",
+            "Attempt Rate"
+        ]
     )
-
-
-# ---------------- SCORE STATS ---------------- #
-def score_statistics(df):
-
-    return {
-        "Mean": round(df["Score"].mean(), 2),
-        "Median": round(df["Score"].median(), 2),
-        "Std Dev": round(df["Score"].std(), 2)
-    }
 
 
 # ---------------- LEADERBOARD ---------------- #
 def leaderboard(df):
 
-    rank_df = df.sort_values(
+    leaderboard_df = df.sort_values(
         "Score",
         ascending=False
     )
 
-    rank_df["Rank"] = rank_df["Score"].rank(
-        ascending=False,
-        method="dense"
+    leaderboard_df["Rank"] = (
+        leaderboard_df["Score"]
+        .rank(
+            ascending=False,
+            method="dense"
+        )
     )
 
-    return rank_df[
+    return leaderboard_df[
         [
             "Name",
             "Department",
@@ -207,28 +225,30 @@ def leaderboard(df):
 # ---------------- DEPARTMENT PERFORMANCE ---------------- #
 def department_performance(df):
 
-    return df.groupby(
-        "Department"
-    )["Score"].mean()
+    return (
+        df.groupby("Department")["Score"]
+        .mean()
+        .sort_values(ascending=False)
+    )
 
 
 # ---------------- COLLEGE PERFORMANCE ---------------- #
 def college_performance(df):
 
-    return df.groupby(
-        "College"
-    )["Score"].mean()
+    return (
+        df.groupby("College")["Score"]
+        .mean()
+        .sort_values(ascending=False)
+    )
 
 
 # ---------------- HEATMAP ---------------- #
 def heatmap_data(df):
 
-    pivot = df.pivot_table(
+    return df.pivot_table(
         values="Score",
         index="Department",
         columns="College",
         aggfunc="mean",
         fill_value=0
     )
-
-    return pivot
