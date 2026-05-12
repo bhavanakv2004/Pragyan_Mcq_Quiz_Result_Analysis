@@ -80,29 +80,52 @@ def validate_files(df, answer_df):
         "D",
         "NOT ANSWERED"
     ]
+     # ---------------- SUBJECT-WISE VALIDATION ---------------- #
+    subjects = answer_df["Subject"].unique()
 
-    qids = answer_df["Question_ID"].unique()
+    for subject in subjects:
 
-    for qid in qids:
+        subject_students = df[
+            df["Subject"] == subject
+        ]
 
-        if qid not in df.columns:
+        subject_answers = answer_df[
+            answer_df["Subject"] == subject
+        ]
 
-            return False, f"❌ Missing question column: {qid}"
+        qids = subject_answers["Question_ID"].tolist()
 
-        df[qid] = (
-            df[qid]
-            .astype(str)
-            .str.strip()
-            .str.upper()
-        )
+        for qid in qids:
 
-        invalid = ~df[qid].isin(valid_options)
+            # Skip if column missing in other subject
+            if qid not in subject_students.columns:
 
-        if invalid.any():
+                return False, (
+                    f"❌ Missing question column "
+                    f"{qid} in {subject}"
+                )
 
-            return False, f"❌ Invalid values in {qid}"
+            # Convert uppercase
+            subject_students[qid] = (
+                subject_students[qid]
+                .astype(str)
+                .str.strip()
+                .str.upper()
+            )
+
+            invalid = ~subject_students[qid].isin(
+                valid_options
+            )
+
+            if invalid.any():
+
+                return False, (
+                    f"❌ Invalid values in "
+                    f"{qid} ({subject})"
+                )
 
     return True, "✅ Files validated successfully"
+  
 
 
 # ---------------- CALCULATE SCORE ---------------- #
