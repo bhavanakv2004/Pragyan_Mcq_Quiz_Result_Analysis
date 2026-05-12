@@ -1,69 +1,62 @@
-import json
-import os
+import sqlite3
+import hashlib
 
-USERS_FILE = "database/users.json"
+# ---------------- DATABASE CONNECTION ---------------- #
+conn = sqlite3.connect("users.db", check_same_thread=False)
+cursor = conn.cursor()
 
+# ---------------- CREATE TABLE ---------------- #
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE,
+    password TEXT
+)
+""")
 
-# ==========================================
-# Create users file if not exists
-# ==========================================
-if not os.path.exists("database"):
-    os.makedirs("database")
-
-if not os.path.exists(USERS_FILE):
-    with open(USERS_FILE, "w") as f:
-        json.dump({}, f)
-
-
-# ==========================================
-# Load Users
-# ==========================================
-def load_users():
-    with open(USERS_FILE, "r") as f:
-        return json.load(f)
+conn.commit()
 
 
-# ==========================================
-# Save Users
-# ==========================================
-def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=4)
+# ---------------- PASSWORD HASHING ---------------- #
+def hash_password(password):
+
+    return hashlib.sha256(password.encode()).hexdigest()
 
 
-# ==========================================
-# Register User
-# ==========================================
-def register_user(username, password, role, college_id):
+# ---------------- REGISTER USER ---------------- #
+def register_user(username, password):
 
-    users = load_users()
+    try:
 
-    if username in users:
-        return False, "Username already exists"
+        hashed_password = hash_password(password)
 
-    users[username] = {
-        "password": password,
-        "role": role,
-        "college_id": college_id
-    }
+        cursor.execute(
+            "INSERT INTO users (username, password) VALUES (?, ?)",
+            (username, hashed_password)
+        )
 
-    save_users(users)
+        conn.commit()
 
-    return True, "Registration Successful"
+        return True, "✅ Registration Successful"
+
+    except:
+
+        return False, "❌ Username already exists"
 
 
-# ==========================================
-# Authenticate User
-# ==========================================
-def authenticate(username, password):
+# ---------------- LOGIN USER ---------------- #
+def login_user(username, password):
 
-    users = load_users()
+    hashed_password = hash_password(password)
 
-    if username in users:
+    cursor.execute(
+        "SELECT * FROM users WHERE username=? AND password=?",
+        (username, hashed_password)
+    )
 
-        user = users[username]
+    user = cursor.fetchone()
 
-        if user["password"] == password:
-            return True, user
+    if user:
+        return True
 
-    return False, None
+    return False
