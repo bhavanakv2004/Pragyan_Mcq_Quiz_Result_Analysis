@@ -18,8 +18,24 @@ def load_file(file):
     df.columns = df.columns.str.strip()
 
     # Fill missing values
-    df.fillna("Not Answered", inplace=True)
+    df.fillna("NOT ANSWERED", inplace=True)
+     # ---------------- AUTO CONVERT ANSWERS TO UPPERCASE ---------------- #
+    for col in df.columns:
 
+        # Skip non-question columns
+        if col not in [
+            "Name",
+            "Department",
+            "College",
+            "Subject"
+        ]:
+
+            df[col] = (
+                df[col]
+                .astype(str)
+                .str.strip()
+                .str.upper()
+            )
     return df
 
 
@@ -71,7 +87,13 @@ def validate_files(df, answer_df):
         if qid not in df.columns:
 
             return False, f"❌ Missing question column: {qid}"
-
+        # Convert answers to uppercase
+        df[qid] = (
+            df[qid]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+        )
         invalid = ~df[qid].isin(valid_options)
 
         if invalid.any():
