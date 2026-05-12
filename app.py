@@ -8,10 +8,11 @@ from auth import *
 
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
-    page_title="Secure MCQ Analytics",
+    page_title=" MCQ Analytics",
     layout="wide"
 )
-
+st.title("📊 Smart MCQ Quiz Analytics Dashboard")
+st.markdown("Analyze performance, identify weak areas, and rank students efficiently.")
 # ---------------- SESSION ---------------- #
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -187,7 +188,7 @@ if st.sidebar.button("Logout"):
     st.rerun()
 
 # ---------------- TITLE ---------------- #
-st.title("📊 Secure Multi-Subject MCQ Analytics")
+st.title("📊  MCQ Analytics")
 
 # ---------------- MULTIPLE FILE UPLOAD ---------------- #
 response_files = st.file_uploader(
@@ -307,31 +308,31 @@ if response_files and answer_files:
         df,
         answer_df
     )
+     # ---------------- SIDEBAR FILTERS ---------------- #
+    st.sidebar.header("🔍 Filters")
+
+    colleges = st.sidebar.multiselect("Select College", df["College"].unique())
+    departments = st.sidebar.multiselect("Select Department", df["Department"].unique())
+    students = st.sidebar.multiselect("Select Student", df["Name"].unique())
+
+    filtered_df = df.copy()
+
+    if colleges:
+        filtered_df = filtered_df[filtered_df["College"].isin(colleges)]
+    if departments:
+        filtered_df = filtered_df[filtered_df["Department"].isin(departments)]
+    if students:
+        filtered_df = filtered_df[filtered_df["Name"].isin(students)]
+
 
     # ---------------- KPI ---------------- #
     st.header("📌 Key Metrics")
 
     col1, col2, col3, col4 = st.columns(4)
-
-    col1.metric(
-        "Total Students",
-        len(df)
-    )
-
-    col2.metric(
-        "Average Score",
-        round(df["Score"].mean(), 2)
-    )
-
-    col3.metric(
-        "Highest Score",
-        df["Score"].max()
-    )
-
-    col4.metric(
-        "Lowest Score",
-        df["Score"].min()
-    )
+    col1.metric("Total Students",len(df))
+    col2.metric("Average Score",round(df["Score"].mean(), 2))
+    col3.metric("Highest Score",df["Score"].max())
+    col4.metric("Lowest Score",df["Score"].min())
 
     # ---------------- LEADERBOARD ---------------- #
     st.header("🏆 Leaderboard")
@@ -343,11 +344,7 @@ if response_files and answer_files:
     # ---------------- QUESTION ANALYSIS ---------------- #
     st.header("❓ Question Analysis")
 
-    q_analysis = question_analysis(
-        df,
-        answer_df
-    )
-
+    q_analysis = question_analysis(df,answer_df)
     st.dataframe(q_analysis)
 
     # ---------------- ATTEMPT RATE ---------------- #
@@ -357,8 +354,39 @@ if response_files and answer_files:
         df,
         answer_df
     )
-
     st.dataframe(attempt_df)
+      # ---------------- DEPARTMENT PERFORMANCE ---------------- #
+    st.header("🏢 Department Performance")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        dept = department_performance(filtered_df)
+        fig, ax = plt.subplots()
+        dept.plot(kind="bar", ax=ax)
+        ax.set_title("Department Performance")
+        st.pyplot(fig)
+
+    with col2:
+        pivot = heatmap_data(filtered_df)
+        fig, ax = plt.subplots()
+        sns.heatmap(pivot, annot=True, cmap="coolwarm", ax=ax)
+        st.pyplot(fig)
+
+    # Department Insights Table
+    st.subheader("📊 Department Insights")
+    dept_df = filtered_df.groupby("Department")["Score"].agg(["mean", "count"])
+    st.dataframe(dept_df)
+
+    # ---------------- COLLEGE PERFORMANCE ---------------- #
+    st.header("🏫 College Ranking")
+
+    college_df = filtered_df.groupby("College")["Score"].mean().sort_values(ascending=False)
+
+    fig, ax = plt.subplots()
+    college_df.plot(kind="barh", ax=ax)
+    ax.set_title("College Performance")
+    st.pyplot(fig)
 
     # ---------------- HEATMAP ---------------- #
     st.header("🔥 Department Heatmap")
