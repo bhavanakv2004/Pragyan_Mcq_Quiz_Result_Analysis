@@ -110,38 +110,46 @@ def calculate_score(df, answer_df):
 
     scores = []
 
-    for _, row in df.iterrows():
+    # Get answer list
+    correct_answers = (
+        answer_df["Answer"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .tolist()
+    )
 
-        subject_answers = answer_df[
-            answer_df["Subject"] == row["Subject"]
+    # Detect question columns automatically
+    question_cols = [
+        col for col in df.columns
+        if col not in [
+            "Name",
+            "Department",
+            "College",
+            "Subject"
         ]
+    ]
 
-        answer_key = dict(
-            zip(
-                subject_answers["Question_ID"],
-                subject_answers["Answer"]
-            )
-        )
+    # Sort columns
+    question_cols = sorted(question_cols)
+
+    for _, row in df.iterrows():
 
         score = 0
 
-        for qid, correct_ans in answer_key.items():
+        for i, col in enumerate(question_cols):
 
-            if qid in row.index:
+            if i < len(correct_answers):
 
-                student_answer = (
-                    str(row[qid])
+                student_ans = (
+                    str(row[col])
                     .strip()
                     .upper()
                 )
 
-                correct_answer = (
-                    str(correct_ans)
-                    .strip()
-                    .upper()
-                )
+                correct_ans = correct_answers[i]
 
-                if student_answer == correct_answer:
+                if student_ans == correct_ans:
 
                     score += 1
 
@@ -150,8 +158,6 @@ def calculate_score(df, answer_df):
     df["Score"] = scores
 
     return df
-
-
 # ---------------- QUESTION ANALYSIS ---------------- #
 def question_analysis(df, answer_df):
 
