@@ -4,18 +4,20 @@ import numpy as np
 # ---------------- LOAD FILE ---------------- #
 def load_file(file):
 
-    # CSV
+    # CSV FILE
     if file.name.endswith(".csv"):
+
         df = pd.read_csv(file)
 
-    # EXCEL
+    # EXCEL FILE
     else:
+
         df = pd.read_excel(file)
 
     # Remove spaces
     df.columns = df.columns.str.strip()
 
-    # Fill empty values
+    # Fill missing values
     df.fillna("Not Answered", inplace=True)
 
     return df
@@ -24,7 +26,6 @@ def load_file(file):
 # ---------------- VALIDATE FILES ---------------- #
 def validate_files(df, answer_df):
 
-    # Required columns
     required_cols = [
         "Name",
         "Department",
@@ -38,7 +39,6 @@ def validate_files(df, answer_df):
 
             return False, f"❌ Missing column: {col}"
 
-    # Answer key columns
     answer_required = [
         "Question_ID",
         "Answer",
@@ -56,7 +56,6 @@ def validate_files(df, answer_df):
 
         return False, "❌ Duplicate student records found"
 
-    # Valid options
     valid_options = [
         "A",
         "B",
@@ -77,7 +76,7 @@ def validate_files(df, answer_df):
 
         if invalid.any():
 
-            return False, f"❌ Invalid values detected in {qid}"
+            return False, f"❌ Invalid values in {qid}"
 
     return True, "✅ Files validated successfully"
 
@@ -136,7 +135,6 @@ def question_analysis(df, answer_df):
 
             accuracy = correct / len(df)
 
-            # Difficulty
             if accuracy > 0.8:
 
                 difficulty = "Easy"
@@ -227,16 +225,6 @@ def department_performance(df):
 
     return (
         df.groupby("Department")["Score"]
-        .mean()
-        .sort_values(ascending=False)
-    )
-
-
-# ---------------- COLLEGE PERFORMANCE ---------------- #
-def college_performance(df):
-
-    return (
-        df.groupby("College")["Score"]
         .mean()
         .sort_values(ascending=False)
     )
