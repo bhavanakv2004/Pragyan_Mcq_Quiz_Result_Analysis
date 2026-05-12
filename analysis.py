@@ -14,15 +14,15 @@ def load_file(file):
 
         df = pd.read_excel(file)
 
-    # Remove spaces
+    # Remove spaces from columns
     df.columns = df.columns.str.strip()
 
-    # Fill missing values
+    # Fill empty values
     df.fillna("NOT ANSWERED", inplace=True)
-     # ---------------- AUTO CONVERT ANSWERS TO UPPERCASE ---------------- #
+
+    # ---------------- AUTO UPPERCASE ---------------- #
     for col in df.columns:
 
-        # Skip non-question columns
         if col not in [
             "Name",
             "Department",
@@ -36,6 +36,7 @@ def load_file(file):
                 .str.strip()
                 .str.upper()
             )
+
     return df
 
 
@@ -67,7 +68,7 @@ def validate_files(df, answer_df):
 
             return False, f"❌ Missing answer key column: {col}"
 
-    # Duplicate records
+    # Duplicate check
     if df.duplicated().sum() > 0:
 
         return False, "❌ Duplicate student records found"
@@ -77,7 +78,7 @@ def validate_files(df, answer_df):
         "B",
         "C",
         "D",
-        "Not Answered"
+        "NOT ANSWERED"
     ]
 
     qids = answer_df["Question_ID"].unique()
@@ -87,13 +88,14 @@ def validate_files(df, answer_df):
         if qid not in df.columns:
 
             return False, f"❌ Missing question column: {qid}"
-        # Convert answers to uppercase
+
         df[qid] = (
             df[qid]
             .astype(str)
             .str.strip()
             .str.upper()
         )
+
         invalid = ~df[qid].isin(valid_options)
 
         if invalid.any():
@@ -127,7 +129,19 @@ def calculate_score(df, answer_df):
 
             if qid in row.index:
 
-                if row[qid] == correct_ans:
+                student_answer = (
+                    str(row[qid])
+                    .strip()
+                    .upper()
+                )
+
+                correct_answer = (
+                    str(correct_ans)
+                    .strip()
+                    .upper()
+                )
+
+                if student_answer == correct_answer:
 
                     score += 1
 
@@ -147,12 +161,20 @@ def question_analysis(df, answer_df):
 
         qid = ans_row["Question_ID"]
 
-        correct_ans = ans_row["Answer"]
+        correct_ans = (
+            str(ans_row["Answer"])
+            .strip()
+            .upper()
+        )
 
         if qid in df.columns:
 
             correct = (
-                df[qid] == correct_ans
+                df[qid]
+                .astype(str)
+                .str.strip()
+                .str.upper()
+                == correct_ans
             ).sum()
 
             accuracy = correct / len(df)
@@ -197,7 +219,10 @@ def attempt_rate(df, answer_df):
         if qid in df.columns:
 
             rate = (
-                df[qid] != "Not Answered"
+                df[qid]
+                .astype(str)
+                .str.upper()
+                != "NOT ANSWERED"
             ).mean()
 
             result.append([
