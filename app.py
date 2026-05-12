@@ -22,78 +22,178 @@ if "username" not in st.session_state:
 # ---------------- LOGIN SYSTEM ---------------- #
 if not st.session_state.logged_in:
 
-    menu = st.sidebar.selectbox(
-        "Select Option",
-        ["Login", "Register"]
+    # ---------- CUSTOM CSS ---------- #
+    st.markdown(
+        """
+        <style>
+
+        .stApp {
+            background: linear-gradient(
+                to right,
+                #0f2027,
+                #203a43,
+                #2c5364
+            );
+        }
+
+        .main-title {
+            text-align: center;
+            color: white;
+            font-size: 42px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .sub-title {
+            text-align: center;
+            color: #dddddd;
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        .login-box {
+            background-color: rgba(255,255,255,0.08);
+            padding: 35px;
+            border-radius: 20px;
+            box-shadow: 0px 0px 25px rgba(0,0,0,0.3);
+        }
+
+        div.stButton > button {
+            width: 100%;
+            height: 50px;
+            border-radius: 10px;
+            font-size: 18px;
+            background: linear-gradient(
+                to right,
+                #00c6ff,
+                #0072ff
+            );
+            color: white;
+            border: none;
+        }
+
+        </style>
+        """,
+        unsafe_allow_html=True
     )
 
-    # -------- REGISTER -------- #
-    if menu == "Register":
+    st.markdown(
+        '<div class="main-title">📊 Secure MCQ Analytics Dashboard</div>',
+        unsafe_allow_html=True
+    )
 
-        st.title("📝 Create Account")
+    st.markdown(
+        '<div class="sub-title">Login or Register to Continue</div>',
+        unsafe_allow_html=True
+    )
 
-        new_user = st.text_input(
-            "Username"
+    option = st.radio(
+        "Choose Option",
+        ["Login", "Register"],
+        horizontal=True
+    )
+
+    col1, col2, col3 = st.columns([1,2,1])
+
+    with col2:
+
+        st.markdown(
+            '<div class="login-box">',
+            unsafe_allow_html=True
         )
 
-        new_pass = st.text_input(
-            "Password",
-            type="password"
-        )
+        # -------- REGISTER -------- #
+        if option == "Register":
 
-        if st.button("Register"):
+            st.subheader("📝 Create Account")
 
-            success, msg = register_user(
-                new_user,
-                new_pass
+            new_user = st.text_input(
+                "Create Username"
             )
 
-            if success:
-                st.success(msg)
-
-            else:
-                st.error(msg)
-
-    # -------- LOGIN -------- #
-    elif menu == "Login":
-
-        st.title("🔐 Login")
-
-        username = st.text_input(
-            "Username"
-        )
-
-        password = st.text_input(
-            "Password",
-            type="password"
-        )
-
-        if st.button("Login"):
-
-            valid = login_user(
-                username,
-                password
+            new_pass = st.text_input(
+                "Create Password",
+                type="password"
             )
 
-            if valid:
+            confirm_pass = st.text_input(
+                "Confirm Password",
+                type="password"
+            )
 
-                st.session_state.logged_in = True
-                st.session_state.username = username
+            if st.button("Register"):
 
-                st.success(
-                    "✅ Login Successful"
+                if new_pass != confirm_pass:
+
+                    st.error(
+                        "❌ Passwords do not match"
+                    )
+
+                elif len(new_pass) < 4:
+
+                    st.warning(
+                        "⚠️ Password should contain minimum 4 characters"
+                    )
+
+                else:
+
+                    success, msg = register_user(
+                        new_user,
+                        new_pass
+                    )
+
+                    if success:
+                        st.success(msg)
+
+                    else:
+                        st.error(msg)
+
+        # -------- LOGIN -------- #
+        else:
+
+            st.subheader("🔐 Login")
+
+            username = st.text_input(
+                "Username"
+            )
+
+            password = st.text_input(
+                "Password",
+                type="password"
+            )
+
+            if st.button("Login"):
+
+                valid = login_user(
+                    username,
+                    password
                 )
 
-                st.rerun()
+                if valid:
 
-            else:
-                st.error(
-                    "❌ Invalid Username or Password"
-                )
+                    st.session_state.logged_in = True
+                    st.session_state.username = username
+
+                    st.success(
+                        "✅ Login Successful"
+                    )
+
+                    st.rerun()
+
+                else:
+
+                    st.error(
+                        "❌ Invalid Username or Password"
+                    )
+
+        st.markdown(
+            '</div>',
+            unsafe_allow_html=True
+        )
 
     st.stop()
 
-# ---------------- LOGOUT ---------------- #
+# ---------------- SIDEBAR ---------------- #
 st.sidebar.success(
     f"Logged in as: {st.session_state.username}"
 )
@@ -108,37 +208,106 @@ if st.sidebar.button("Logout"):
 # ---------------- TITLE ---------------- #
 st.title("📊 Secure Multi-Subject MCQ Analytics")
 
-st.markdown(
-    """
+st.markdown("""
 Analyze:
-- Multiple Subjects
+- Multiple Quiz Files
 - Randomized Questions
 - Department Performance
 - College Ranking
 - Weak Questions
 - Attempt Rate
-"""
+""")
+
+# ---------------- MULTIPLE FILE UPLOAD ---------------- #
+response_files = st.file_uploader(
+    "📂 Upload Multiple Student Response Files",
+    type=["csv", "xlsx"],
+    accept_multiple_files=True
 )
 
-# ---------------- FILE UPLOAD ---------------- #
-data_file = st.file_uploader(
-    "Upload Student Response CSV",
-    type=["csv"]
-)
-
-answer_file = st.file_uploader(
-    "Upload Answer Key CSV",
-    type=["csv"]
+answer_files = st.file_uploader(
+    "📂 Upload Multiple Answer Key Files",
+    type=["csv", "xlsx"],
+    accept_multiple_files=True
 )
 
 # ---------------- PROCESS FILES ---------------- #
-if data_file and answer_file:
+if response_files and answer_files:
 
-    df, answer_df = load_data(
-        data_file,
-        answer_file
+    all_students = []
+    all_answers = []
+
+    # -------- LOAD RESPONSE FILES -------- #
+    for file in response_files:
+
+        try:
+
+            temp_df = load_file(file)
+
+            subject_name = (
+                file.name.split(".")[0]
+            )
+
+            temp_df["Subject"] = subject_name
+
+            all_students.append(temp_df)
+
+        except Exception as e:
+
+            st.error(
+                f"❌ Error reading {file.name}: {e}"
+            )
+
+    # -------- LOAD ANSWER FILES -------- #
+    for file in answer_files:
+
+        try:
+
+            ans_df = load_file(file)
+
+            subject_name = (
+                file.name.split("_")[0]
+            )
+
+            ans_df["Subject"] = subject_name
+
+            all_answers.append(ans_df)
+
+        except Exception as e:
+
+            st.error(
+                f"❌ Error reading {file.name}: {e}"
+            )
+
+    # -------- EMPTY CHECK -------- #
+    if len(all_students) == 0:
+
+        st.warning(
+            "⚠️ No valid student files uploaded"
+        )
+
+        st.stop()
+
+    if len(all_answers) == 0:
+
+        st.warning(
+            "⚠️ No valid answer files uploaded"
+        )
+
+        st.stop()
+
+    # -------- MERGE FILES -------- #
+    df = pd.concat(
+        all_students,
+        ignore_index=True
     )
 
+    answer_df = pd.concat(
+        all_answers,
+        ignore_index=True
+    )
+
+    # ---------------- VALIDATION ---------------- #
     valid, message = validate_files(
         df,
         answer_df
@@ -147,103 +316,62 @@ if data_file and answer_file:
     if not valid:
 
         st.error(message)
+
         st.stop()
 
     st.success(message)
 
+    # ---------------- SCORE ---------------- #
     df = calculate_score(
         df,
         answer_df
     )
 
-    # ---------------- SIDEBAR FILTERS ---------------- #
-    st.sidebar.header("🔍 Filters")
-
-    colleges = st.sidebar.multiselect(
-        "Select College",
-        df["College"].unique()
-    )
-
-    departments = st.sidebar.multiselect(
-        "Select Department",
-        df["Department"].unique()
-    )
-
-    subjects = st.sidebar.multiselect(
-        "Select Subject",
-        df["Subject"].unique()
-    )
-
-    students = st.sidebar.multiselect(
-        "Select Student",
-        df["Name"].unique()
-    )
-
-    filtered_df = df.copy()
-
-    if colleges:
-        filtered_df = filtered_df[
-            filtered_df["College"].isin(colleges)
-        ]
-
-    if departments:
-        filtered_df = filtered_df[
-            filtered_df["Department"].isin(departments)
-        ]
-
-    if subjects:
-        filtered_df = filtered_df[
-            filtered_df["Subject"].isin(subjects)
-        ]
-
-    if students:
-        filtered_df = filtered_df[
-            filtered_df["Name"].isin(students)
-        ]
-
-    if filtered_df.empty:
-
-        st.warning(
-            "⚠️ No data found for selected filters"
-        )
-
-        st.stop()
-
-    # ---------------- KPIs ---------------- #
+    # ---------------- KPI ---------------- #
     st.header("📌 Key Metrics")
 
     col1, col2, col3, col4 = st.columns(4)
 
     col1.metric(
-        "Students",
-        len(filtered_df)
+        "Total Students",
+        len(df)
     )
 
     col2.metric(
         "Average Score",
-        round(filtered_df["Score"].mean(), 2)
+        round(df["Score"].mean(), 2)
     )
 
     col3.metric(
         "Highest Score",
-        filtered_df["Score"].max()
+        df["Score"].max()
     )
 
     col4.metric(
         "Lowest Score",
-        filtered_df["Score"].min()
+        df["Score"].min()
     )
 
-    # ---------------- SCORE DISTRIBUTION ---------------- #
-    st.header("📈 Score Distribution")
+    # ---------------- SUBJECT PERFORMANCE ---------------- #
+    st.header("📚 Subject-wise Performance")
+
+    subject_perf = (
+        df.groupby("Subject")["Score"]
+        .mean()
+        .sort_values(ascending=False)
+    )
+
+    st.dataframe(subject_perf)
 
     fig, ax = plt.subplots()
 
-    sns.histplot(
-        filtered_df["Score"],
-        bins=10,
-        kde=True,
+    subject_perf.plot(
+        kind="bar",
         ax=ax
+    )
+
+    ax.set_title(
+        "Average Score by Subject"
     )
 
     st.pyplot(fig)
@@ -251,7 +379,7 @@ if data_file and answer_file:
     # ---------------- LEADERBOARD ---------------- #
     st.header("🏆 Leaderboard")
 
-    leaderboard_df = leaderboard(filtered_df)
+    leaderboard_df = leaderboard(df)
 
     st.dataframe(
         leaderboard_df
@@ -261,59 +389,30 @@ if data_file and answer_file:
     st.header("❓ Question Analysis")
 
     q_analysis = question_analysis(
-        filtered_df,
+        df,
         answer_df
     )
 
     st.dataframe(q_analysis)
 
-    fig, ax = plt.subplots()
-
-    sns.barplot(
-        x="Question_ID",
-        y="Accuracy",
-        data=q_analysis,
-        ax=ax
-    )
-
-    plt.xticks(rotation=45)
-
-    st.pyplot(fig)
-
     # ---------------- ATTEMPT RATE ---------------- #
     st.header("📌 Attempt Rate")
 
     attempt_df = attempt_rate(
-        filtered_df,
+        df,
         answer_df
     )
 
     st.dataframe(attempt_df)
 
-    # ---------------- DEPARTMENT PERFORMANCE ---------------- #
-    st.header("🏢 Department Performance")
-
-    dept_df = department_performance(
-        filtered_df
-    )
-
-    fig, ax = plt.subplots()
-
-    dept_df.plot(
-        kind="bar",
-        ax=ax
-    )
-
-    st.pyplot(fig)
-
     # ---------------- HEATMAP ---------------- #
-    st.header("🔥 Heatmap")
+    st.header("🔥 Department Heatmap")
 
-    heatmap_df = heatmap_data(
-        filtered_df
+    heatmap_df = heatmap_data(df)
+
+    fig, ax = plt.subplots(
+        figsize=(8, 5)
     )
-
-    fig, ax = plt.subplots(figsize=(8, 5))
 
     sns.heatmap(
         heatmap_df,
@@ -324,29 +423,16 @@ if data_file and answer_file:
 
     st.pyplot(fig)
 
-    # ---------------- SUSPICIOUS DETECTION ---------------- #
-    st.header("🚨 Suspicious Pattern Detection")
-
-    suspicious = filtered_df.groupby(
-        "Score"
-    ).size()
-
-    suspicious = suspicious[
-        suspicious > 5
-    ]
-
-    st.write(suspicious)
-
     # ---------------- DOWNLOAD REPORT ---------------- #
-    st.header("📥 Download Report")
+    st.header("📥 Download Leaderboard")
 
-    report_csv = leaderboard_df.to_csv(
+    csv = leaderboard_df.to_csv(
         index=False
     ).encode("utf-8")
 
     st.download_button(
-        label="Download Leaderboard",
-        data=report_csv,
+        label="Download CSV",
+        data=csv,
         file_name="leaderboard.csv",
         mime="text/csv"
     )
