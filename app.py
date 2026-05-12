@@ -1,245 +1,558 @@
+# ==========================================
+# app.py
+# Secure Multi-Subject Quiz Analytics System
+# ==========================================
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-
-from auth import authenticate
-from validator import *
-from analytics import *
-from audit import log_activity
-from security import generate_file_hash
-
+import hashlib
+import json
+import os
+import traceback
+from datetime import datetime
 
 # ==========================================
-# Streamlit Config
+# CREATE REQUIRED FOLDERS
 # ==========================================
+
+folders = ["logs", "database", "uploads"]
+
+for folder in folders:
+    os.makedirs(folder, exist_ok=True)
+
+# ==========================================
+# USERS FILE
+# ==========================================
+
+USERS_FILE = "database/users.json"
+
+if not os.path.exists(USERS_FILE):
+    with open(USERS_FILE, "w") as f:
+        json.dump({}, f)
+
+# ==========================================
+# PAGE CONFIG
+# ==========================================
+
 st.set_page_config(
     page_title="Secure Quiz Analytics",
     layout="wide"
 )
 
+# ==========================================
+# HELPER FUNCTIONS
+# ==========================================
+
+def load_users():
+    with open(USERS_FILE, "r") as f:
+        return json.load(f)
+
+def save_users(users):
+    with open(USERS_FILE, "w") as f:
+        json.dump(users, f, indent=4)
 
 # ==========================================
-# Authentication Section
+# REGISTER USER
 # ==========================================
-st.sidebar.title("Authentication")
 
-menu = st.sidebar.selectbox(
-    "Select Option",
-    ["Login", "Register"]
-)
+def register_user(username, password, role, college_id):
+
+    users = load_users()
+
+    if username in users:
+        return False, "Username already exists"
+
+    users[username] = {
+        "password": password,
+        "role": role,
+        "college_id": college_id
+    }
+
+    save_users(users)
+
+    return True, "Registration Successful"
+
 # ==========================================
-# Register
+# LOGIN AUTHENTICATION
 # ==========================================
-if menu == "Register":
 
-    st.sidebar.subheader("Create Account")
+def authenticate(username, password):
 
-    new_user = st.sidebar.text_input("Username")
-    new_password = st.sidebar.text_input(
-        "Password",
-        type="password"
-    )
+    users = load_users()
 
-    role = st.sidebar.selectbox(
-        "Role",
-        ["faculty", "student"]
-    )
+    if username in users:
 
-    college_id = st.sidebar.text_input("College ID")
+        user = users[username]
 
-    register_btn = st.sidebar.button("Register")
+        if user["password"] == password:
+            return True, user
 
-    if register_btn:
+    return False, None
 
-        from auth import register_user
+# ==========================================
+# AUDIT LOG
+# ==========================================
 
-        status, message = register_user(
-            new_user,
-            new_password,
-            role,
-            college_id
+def log_activity(user, action):
+
+    with open("logs/audit_log.txt", "a") as f:
+        f.write(
+            f"{datetime.now()} | {user} | {action}\n"
         )
 
-        if status:
-            st.success(message)
-            log_activity(new_user, "Registered Account")
-        else:
-            st.error(message)
-
-    st.stop()
-  # ==========================================
-# Login
 # ==========================================
-st.sidebar.subheader("Login")
-
-username = st.sidebar.text_input("Username")
-password = st.sidebar.text_input(
-    "Password",
-    type="password"
-)
-
-login = st.sidebar.button("Login")
-
-if login:
-
-    status, user = authenticate(username, password)
-
-    if status:
-        st.session_state["user"] = user
-        st.session_state["username"] = username
-        st.success("Login Successful")
-        log_activity(username, "Logged In")
-
-    else:
-        st.error("Invalid Credentials")
-        st.stop()
-
-
-if "user" not in st.session_state:
-    st.warning("Please login")
-    st.stop()
-
-
-user = st.session_state["user"]
-username = st.session_state["username"]
+# FILE HASHING
 # ==========================================
-# Dashboard Title
-# ==========================================
-st.title("Secure Multi-Subject Quiz Analytics System")
 
+def generate_file_hash(file_bytes):
+
+    return hashlib.sha256(file_bytes).hexdigest()
 
 # ==========================================
-# Upload Files
+# VALIDATION
 # ==========================================
-st.sidebar.header("Upload Files")
 
-answer_files = st.sidebar.file_uploader(
-    "Upload Answer Keys",
-    type=["csv", "xlsx"],
-    accept_multiple_files=True
-)
+required_response_columns = [
+    "Student_ID",
+    "College_ID",
+    "Question_ID",
+    "Student_Answer"
+]
 
-response_files = st.sidebar.file_uploader(
-    "Upload Response Files",
-    type=["csv", "xlsx"],
-    accept_multiple_files=True
-)
+required_answer_columns = [
+    "Question_ID",
+    "Correct_Answer",
+    "Subject"
+]
 
+def validate_columns(df, required_columns):
+
+    missing = []
+
+    for col in required_columns:
+        if col not in df.columns:
+            missing.append(col)
+
+    return missing
 
 # ==========================================
-# Read Uploaded Files
+# ANALYTICS FUNCTIONS
 # ==========================================
+
+def evaluate_answers(response_df, answer_df):
+
+    merged = pd.merge(
+        response_df,
+        answer_df,
+        on="Question_ID",
+        how="left"
+    )
+
+    merged["Result"] = (
+        merged["Student_Answer"] ==
+        merged["Correct_Answer"]
+    )
+
+    merged["Score"] = merged["Result"].astype(int)
+
+    return merged
+
+# ==========================================
+# STUDENT PERFORMANCE
+# ==========================================
+
+def student_performance(result_df):
+
+    performance = (
+        result_df.groupby(
+            ["Student_ID", "Subject"]
+        )["Score"]
+        .sum()
+        .reset_index()
+    )
+
+    return performance
+
+# ==========================================
+# DIFFICULT QUESTIONS
+# ==========================================
+
+def difficult_questions(result_df):
+
+    difficulty = (
+        result_df.groupby("Question_ID")["Score"]
+        .mean()
+        .reset_index()
+    )
+
+    difficulty.columns = [
+        "Question_ID",
+        "Accuracy"
+    ]
+
+    difficult = difficulty[
+        difficulty["Accuracy"] < 0.4
+    ]
+
+    return difficult
+
+# ==========================================
+# READ FILES
+# ==========================================
+
 def read_file(file):
 
-    if file.name.endswith("csv"):
+    if file.name.endswith(".csv"):
         return pd.read_csv(file)
 
     return pd.read_excel(file)
+
+# ==========================================
+# MAIN APP
 # ==========================================
 
-        if missing:
-            st.error(f"Missing columns in {file.name}: {missing}")
-            st.stop()
+try:
 
-        # ====================================
-        # College Access Protection
-        # ====================================
-        if user["role"] != "admin":
+    st.title(
+        "Secure Multi-Subject Quiz Analytics System"
+    )
 
-            allowed_college = user["college_id"]
+    # ======================================
+    # AUTHENTICATION
+    # ======================================
 
-            invalid = df[
-                df["College_ID"] != allowed_college
-            ]
+    st.sidebar.title("Authentication")
 
-            if len(invalid) > 0:
-                st.error(
-                    "Unauthorized College Data Detected"
+    menu = st.sidebar.selectbox(
+        "Select Option",
+        ["Login", "Register"]
+    )
+
+    # ======================================
+    # REGISTER
+    # ======================================
+
+    if menu == "Register":
+
+        st.subheader("Create Account")
+
+        new_user = st.text_input(
+            "Username"
+        )
+
+        new_password = st.text_input(
+            "Password",
+            type="password"
+        )
+
+        role = st.selectbox(
+            "Role",
+            ["faculty", "student"]
+        )
+
+        college_id = st.text_input(
+            "College ID"
+        )
+
+        register_btn = st.button(
+            "Register"
+        )
+
+        if register_btn:
+
+            status, message = register_user(
+                new_user,
+                new_password,
+                role,
+                college_id
+            )
+
+            if status:
+                st.success(message)
+
+                log_activity(
+                    new_user,
+                    "Registered Account"
                 )
-                st.stop()
 
-        all_responses.append(df)
+            else:
+                st.error(message)
 
+    # ======================================
+    # LOGIN
+    # ======================================
 
-    # ====================================
-    # Combine Multiple Subjects
-    # ====================================
-    answer_df = pd.concat(all_answers)
-    response_df = pd.concat(all_responses)
+    elif menu == "Login":
 
+        st.subheader("Login")
 
-    # ====================================
-    # Randomized Question Handling
-    # ====================================
-    result_df = evaluate_answers(
-        response_df,
-        answer_df
-    )
+        username = st.text_input(
+            "Username"
+        )
 
+        password = st.text_input(
+            "Password",
+            type="password"
+        )
 
-    # ====================================
-    # Performance Analytics
-    # ====================================
-    performance_df = student_performance(result_df)
+        login_btn = st.button(
+            "Login"
+        )
 
+        if login_btn:
 
-    # ====================================
-    # Display Results
-    # ====================================
-    st.subheader("Student Performance")
-    st.dataframe(performance_df)
+            status, user = authenticate(
+                username,
+                password
+            )
 
+            if status:
 
-    # ====================================
-    # Charts
-    # ====================================
-    fig = px.bar(
-        performance_df,
-        x="Student_ID",
-        y="Score",
-        color="Subject",
-        title="Student Scores"
-    )
+                st.session_state["user"] = user
+                st.session_state["username"] = username
 
-    st.plotly_chart(fig, use_container_width=True)
+                st.success(
+                    "Login Successful"
+                )
 
+                log_activity(
+                    username,
+                    "Logged In"
+                )
 
-    # ====================================
-    # Difficult Questions
-    # ====================================
-    st.subheader("Difficult Questions")
+            else:
+                st.error(
+                    "Invalid Credentials"
+                )
 
-    difficult_df = difficult_questions(result_df)
+    # ======================================
+    # DASHBOARD
+    # ======================================
 
-    st.dataframe(difficult_df)
+    if "user" in st.session_state:
 
+        user = st.session_state["user"]
+        username = st.session_state["username"]
 
-    # ====================================
-    # Weak Students
-    # ====================================
-    st.subheader("Weak Students")
+        st.success(
+            f"Welcome {username}"
+        )
 
-    weak_students = performance_df[
-        performance_df["Score"] < 3
-    ]
+        st.sidebar.header("Upload Files")
 
-    st.dataframe(weak_students)
+        answer_files = st.sidebar.file_uploader(
+            "Upload Answer Keys",
+            type=["csv", "xlsx"],
+            accept_multiple_files=True
+        )
 
+        response_files = st.sidebar.file_uploader(
+            "Upload Response Files",
+            type=["csv", "xlsx"],
+            accept_multiple_files=True
+        )
 
-    # ====================================
-    # Download Reports
-    # ====================================
-    csv = performance_df.to_csv(index=False)
+        # ==================================
+        # PROCESS FILES
+        # ==================================
 
-    st.download_button(
-        label="Download Performance Report",
-        data=csv,
-        file_name="performance_report.csv",
-        mime="text/csv"
-    )
+        if answer_files and response_files:
 
+            all_answers = []
+            all_responses = []
 
-    # ====================================
-    # Audit Log
-    # ====================================
-    log_activity(username, "Processed Quiz Analytics")
+            # ==============================
+            # ANSWER KEYS
+            # ==============================
+
+            for file in answer_files:
+
+                file_hash = generate_file_hash(
+                    file.getvalue()
+                )
+
+                st.sidebar.write(
+                    f"Hash: {file_hash[:10]}..."
+                )
+
+                df = read_file(file)
+
+                missing = validate_columns(
+                    df,
+                    required_answer_columns
+                )
+
+                if missing:
+                    st.error(
+                        f"Missing columns in {file.name}: {missing}"
+                    )
+
+                else:
+                    all_answers.append(df)
+
+            # ==============================
+            # RESPONSE FILES
+            # ==============================
+
+            for file in response_files:
+
+                df = read_file(file)
+
+                missing = validate_columns(
+                    df,
+                    required_response_columns
+                )
+
+                if missing:
+
+                    st.error(
+                        f"Missing columns in {file.name}: {missing}"
+                    )
+
+                else:
+
+                    # ======================
+                    # SECURITY CHECK
+                    # ======================
+
+                    if user["role"] != "admin":
+
+                        allowed_college = (
+                            user["college_id"]
+                        )
+
+                        invalid = df[
+                            df["College_ID"]
+                            != allowed_college
+                        ]
+
+                        if len(invalid) > 0:
+
+                            st.error(
+                                "Unauthorized College Data Detected"
+                            )
+
+                        else:
+                            all_responses.append(df)
+
+                    else:
+                        all_responses.append(df)
+
+            # ==============================
+            # COMBINE FILES
+            # ==============================
+
+            if all_answers and all_responses:
+
+                answer_df = pd.concat(
+                    all_answers
+                )
+
+                response_df = pd.concat(
+                    all_responses
+                )
+
+                # ==========================
+                # EVALUATE
+                # ==========================
+
+                result_df = evaluate_answers(
+                    response_df,
+                    answer_df
+                )
+
+                performance_df = student_performance(
+                    result_df
+                )
+
+                difficult_df = difficult_questions(
+                    result_df
+                )
+
+                # ==========================
+                # DISPLAY RESULTS
+                # ==========================
+
+                st.subheader(
+                    "Student Performance"
+                )
+
+                st.dataframe(
+                    performance_df
+                )
+
+                # ==========================
+                # CHART
+                # ==========================
+
+                fig = px.bar(
+                    performance_df,
+                    x="Student_ID",
+                    y="Score",
+                    color="Subject",
+                    title="Student Scores"
+                )
+
+                st.plotly_chart(
+                    fig,
+                    use_container_width=True
+                )
+
+                # ==========================
+                # DIFFICULT QUESTIONS
+                # ==========================
+
+                st.subheader(
+                    "Difficult Questions"
+                )
+
+                st.dataframe(
+                    difficult_df
+                )
+
+                # ==========================
+                # WEAK STUDENTS
+                # ==========================
+
+                st.subheader(
+                    "Weak Students"
+                )
+
+                weak_students = performance_df[
+                    performance_df["Score"] < 3
+                ]
+
+                st.dataframe(
+                    weak_students
+                )
+
+                # ==========================
+                # DOWNLOAD REPORT
+                # ==========================
+
+                csv = performance_df.to_csv(
+                    index=False
+                )
+
+                st.download_button(
+                    label="Download Report",
+                    data=csv,
+                    file_name="performance_report.csv",
+                    mime="text/csv"
+                )
+
+                # ==========================
+                # LOGGING
+                # ==========================
+
+                log_activity(
+                    username,
+                    "Processed Analytics"
+                )
+
+except Exception as e:
+
+    st.error(f"Error: {e}")
+
+    st.code(traceback.format_exc())
