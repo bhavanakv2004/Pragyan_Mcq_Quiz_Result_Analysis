@@ -9,7 +9,7 @@ from auth import *
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
     page_title=" Smart MCQ Quiz Analytics Dashboard",
-    layout="wide"
+    layout="wide",
     st.markdown("Analyze performance, identify weak areas, and rank students efficiently."))
 # ---------------- SESSION ---------------- #
 if "logged_in" not in st.session_state:
