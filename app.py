@@ -22,7 +22,6 @@ if "username" not in st.session_state:
 # ---------------- LOGIN SYSTEM ---------------- #
 if not st.session_state.logged_in:
 
-    # ---------- CUSTOM CSS ---------- #
     st.markdown(
         """
         <style>
@@ -55,7 +54,6 @@ if not st.session_state.logged_in:
             background-color: rgba(255,255,255,0.08);
             padding: 35px;
             border-radius: 20px;
-            box-shadow: 0px 0px 25px rgba(0,0,0,0.3);
         }
 
         div.stButton > button {
@@ -63,13 +61,6 @@ if not st.session_state.logged_in:
             height: 50px;
             border-radius: 10px;
             font-size: 18px;
-            background: linear-gradient(
-                to right,
-                #00c6ff,
-                #0072ff
-            );
-            color: white;
-            border: none;
         }
 
         </style>
@@ -83,7 +74,7 @@ if not st.session_state.logged_in:
     )
 
     st.markdown(
-        '<div class="sub-title">Login or Register to Continue</div>',
+        '<div class="sub-title">Login or Register</div>',
         unsafe_allow_html=True
     )
 
@@ -105,14 +96,14 @@ if not st.session_state.logged_in:
         # -------- REGISTER -------- #
         if option == "Register":
 
-            st.subheader("📝 Create Account")
+            st.subheader("📝 Register")
 
             new_user = st.text_input(
-                "Create Username"
+                "Username"
             )
 
             new_pass = st.text_input(
-                "Create Password",
+                "Password",
                 type="password"
             )
 
@@ -127,12 +118,6 @@ if not st.session_state.logged_in:
 
                     st.error(
                         "❌ Passwords do not match"
-                    )
-
-                elif len(new_pass) < 4:
-
-                    st.warning(
-                        "⚠️ Password should contain minimum 4 characters"
                     )
 
                 else:
@@ -174,10 +159,6 @@ if not st.session_state.logged_in:
                     st.session_state.logged_in = True
                     st.session_state.username = username
 
-                    st.success(
-                        "✅ Login Successful"
-                    )
-
                     st.rerun()
 
                 else:
@@ -208,25 +189,15 @@ if st.sidebar.button("Logout"):
 # ---------------- TITLE ---------------- #
 st.title("📊 Secure Multi-Subject MCQ Analytics")
 
-st.markdown("""
-Analyze:
-- Multiple Quiz Files
-- Randomized Questions
-- Department Performance
-- College Ranking
-- Weak Questions
-- Attempt Rate
-""")
-
 # ---------------- MULTIPLE FILE UPLOAD ---------------- #
 response_files = st.file_uploader(
-    "📂 Upload Multiple Student Response Files",
+    "📂 Upload Student Response Files",
     type=["csv", "xlsx"],
     accept_multiple_files=True
 )
 
 answer_files = st.file_uploader(
-    "📂 Upload Multiple Answer Key Files",
+    "📂 Upload Answer Key Files",
     type=["csv", "xlsx"],
     accept_multiple_files=True
 )
@@ -237,7 +208,7 @@ if response_files and answer_files:
     all_students = []
     all_answers = []
 
-    # -------- LOAD RESPONSE FILES -------- #
+    # -------- RESPONSE FILES -------- #
     for file in response_files:
 
         try:
@@ -245,7 +216,12 @@ if response_files and answer_files:
             temp_df = load_file(file)
 
             subject_name = (
-                file.name.split(".")[0]
+                file.name
+                .split(".")[0]
+                .replace(" (2)", "")
+                .replace(" (3)", "")
+                .replace("_answers", "")
+                .strip()
             )
 
             temp_df["Subject"] = subject_name
@@ -258,7 +234,7 @@ if response_files and answer_files:
                 f"❌ Error reading {file.name}: {e}"
             )
 
-    # -------- LOAD ANSWER FILES -------- #
+    # -------- ANSWER FILES -------- #
     for file in answer_files:
 
         try:
@@ -266,7 +242,12 @@ if response_files and answer_files:
             ans_df = load_file(file)
 
             subject_name = (
-                file.name.split("_")[0]
+                file.name
+                .split(".")[0]
+                .replace(" (2)", "")
+                .replace(" (3)", "")
+                .replace("_answers", "")
+                .strip()
             )
 
             ans_df["Subject"] = subject_name
@@ -352,38 +333,12 @@ if response_files and answer_files:
         df["Score"].min()
     )
 
-    # ---------------- SUBJECT PERFORMANCE ---------------- #
-    st.header("📚 Subject-wise Performance")
-
-    subject_perf = (
-        df.groupby("Subject")["Score"]
-        .mean()
-        .sort_values(ascending=False)
-    )
-
-    st.dataframe(subject_perf)
-
-    fig, ax = plt.subplots()
-
-    subject_perf.plot(
-        kind="bar",
-        ax=ax
-    )
-
-    ax.set_title(
-        "Average Score by Subject"
-    )
-
-    st.pyplot(fig)
-
     # ---------------- LEADERBOARD ---------------- #
     st.header("🏆 Leaderboard")
 
     leaderboard_df = leaderboard(df)
 
-    st.dataframe(
-        leaderboard_df
-    )
+    st.dataframe(leaderboard_df)
 
     # ---------------- QUESTION ANALYSIS ---------------- #
     st.header("❓ Question Analysis")
@@ -422,17 +377,3 @@ if response_files and answer_files:
     )
 
     st.pyplot(fig)
-
-    # ---------------- DOWNLOAD REPORT ---------------- #
-    st.header("📥 Download Leaderboard")
-
-    csv = leaderboard_df.to_csv(
-        index=False
-    ).encode("utf-8")
-
-    st.download_button(
-        label="Download CSV",
-        data=csv,
-        file_name="leaderboard.csv",
-        mime="text/csv"
-    )
