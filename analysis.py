@@ -66,12 +66,9 @@ def validate_files(df, answer_df):
 
         if col not in answer_df.columns:
 
-            return False, f"❌ Missing answer key column: {col}"
-
-    # Duplicate check
-    if df.duplicated().sum() > 0:
-
-        return False, "❌ Duplicate student records found"
+            return False, (
+                f"❌ Missing answer key column: {col}"
+            )
 
     valid_options = [
         "A",
@@ -80,34 +77,36 @@ def validate_files(df, answer_df):
         "D",
         "NOT ANSWERED"
     ]
-     # ---------------- SUBJECT-WISE VALIDATION ---------------- #
+
+    # ---------------- SUBJECT-WISE VALIDATION ---------------- #
     subjects = answer_df["Subject"].unique()
 
     for subject in subjects:
 
+        # Filter subject data
         subject_students = df[
             df["Subject"] == subject
-        ]
+        ].copy()
 
         subject_answers = answer_df[
             answer_df["Subject"] == subject
         ]
 
-        qids = subject_answers["Question_ID"].tolist()
+        qids = subject_answers[
+            "Question_ID"
+        ].tolist()
 
         for qid in qids:
 
-            # Skip if column missing in other subject
+            # Skip if question column missing
             if qid not in subject_students.columns:
 
-                return False, (
-                    f"❌ Missing question column "
-                    f"{qid} in {subject}"
-                )
+                continue
 
-            # Convert uppercase
+            # Fill NaN values
             subject_students[qid] = (
                 subject_students[qid]
+                .fillna("NOT ANSWERED")
                 .astype(str)
                 .str.strip()
                 .str.upper()
@@ -125,9 +124,6 @@ def validate_files(df, answer_df):
                 )
 
     return True, "✅ Files validated successfully"
-  
-
-
 # ---------------- CALCULATE SCORE ---------------- #
 def calculate_score(df, answer_df):
 
