@@ -370,11 +370,16 @@ if response_files and answer_files:
         ]
 
     if subjects:
-
+    
         filtered_df = filtered_df[
             filtered_df["Subject"].apply(
-                lambda x: any(
-                    sub in x
+                lambda x:
+                any(
+                    sub.strip().upper()
+                    in [
+                        s.strip().upper()
+                        for s in x.split(",")
+                    ]
                     for sub in subjects
                 )
             )
