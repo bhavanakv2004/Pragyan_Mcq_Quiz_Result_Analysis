@@ -127,56 +127,77 @@ def validate_files(df, answer_df):
 # ---------------- CALCULATE SCORE ---------------- #
 def calculate_score(df, answer_df):
 
-    scores = []
+    all_results = []
 
-    # Get answer list
-    correct_answers = (
-        answer_df["Answer"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        .tolist()
+    subjects = df["Subject"].unique()
+
+    for subject in subjects:
+
+        # Subject-wise students
+        subject_students = df[
+            df["Subject"] == subject
+        ].copy()
+
+        # Subject-wise answers
+        subject_answers = answer_df[
+            answer_df["Subject"] == subject
+        ]
+
+        answer_key = dict(
+            zip(
+                subject_answers["Question_ID"],
+                subject_answers["Answer"]
+            )
+        )
+
+        scores = []
+
+        for _, row in subject_students.iterrows():
+
+            score = 0
+
+            for qid, correct_ans in answer_key.items():
+
+                if qid in row.index:
+
+                    student_ans = (
+                        str(row[qid])
+                        .strip()
+                        .upper()
+                    )
+
+                    correct_ans = (
+                        str(correct_ans)
+                        .strip()
+                        .upper()
+                    )
+
+                    if student_ans == correct_ans:
+
+                        score += 1
+
+            scores.append(score)
+
+        subject_students["Score"] = scores
+
+        all_results.append(subject_students)
+
+    # Merge all subjects
+    final_df = pd.concat(
+        all_results,
+        ignore_index=True
     )
 
-    # Detect question columns automatically
-    question_cols = [
-        col for col in df.columns
-        if col not in [
-            "Name",
-            "Department",
-            "College",
-            "Subject"
-        ]
-    ]
+    # ---------------- TOTAL SCORE ---------------- #
+    grouped_df = final_df.groupby(
+        ["Name", "Department", "College"],
+        as_index=False
+    ).agg({
+        "Score": "sum",
+        "Subject": lambda x: ", ".join(sorted(set(x)))
+    })
 
-    # Sort columns
-    question_cols = sorted(question_cols)
-
-    for _, row in df.iterrows():
-
-        score = 0
-
-        for i, col in enumerate(question_cols):
-
-            if i < len(correct_answers):
-
-                student_ans = (
-                    str(row[col])
-                    .strip()
-                    .upper()
-                )
-
-                correct_ans = correct_answers[i]
-
-                if student_ans == correct_ans:
-
-                    score += 1
-
-        scores.append(score)
-
-    df["Score"] = scores
-
-    return df
+    return grouped_df
 # ---------------- QUESTION ANALYSIS ---------------- #
 def question_analysis(df, answer_df):
 
