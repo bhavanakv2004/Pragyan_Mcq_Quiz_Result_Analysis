@@ -6,6 +6,133 @@ import seaborn as sns
 from analysis import *
 from auth import *
 
+# PDF IMPORTS
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle
+)
+
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from io import BytesIO
+
+
+# ---------------- PDF GENERATOR ---------------- #
+def create_pdf_report(df, leaderboard_df):
+
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(buffer)
+
+    elements = []
+
+    styles = getSampleStyleSheet()
+
+    # ---------------- TITLE ---------------- #
+    title = Paragraph(
+        "MCQ Analytics Report",
+        styles["Title"]
+    )
+
+    elements.append(title)
+
+    elements.append(Spacer(1, 12))
+
+    # ---------------- SUMMARY ---------------- #
+    summary_data = [
+
+        ["Metric", "Value"],
+
+        ["Total Students", str(len(df))],
+
+        ["Average Score",
+         str(round(df["Score"].mean(), 2))],
+
+        ["Highest Score",
+         str(df["Score"].max())],
+
+        ["Lowest Score",
+         str(df["Score"].min())]
+
+    ]
+
+    summary_table = Table(summary_data)
+
+    summary_table.setStyle(
+
+        TableStyle([
+
+            ("BACKGROUND", (0, 0), (-1, 0),
+             colors.grey),
+
+            ("TEXTCOLOR", (0, 0), (-1, 0),
+             colors.whitesmoke),
+
+            ("GRID", (0, 0), (-1, -1),
+             1, colors.black),
+
+            ("FONTNAME", (0, 0), (-1, 0),
+             "Helvetica-Bold")
+
+        ])
+
+    )
+
+    elements.append(summary_table)
+
+    elements.append(Spacer(1, 20))
+
+    # ---------------- LEADERBOARD ---------------- #
+    leaderboard_title = Paragraph(
+        "Leaderboard",
+        styles["Heading2"]
+    )
+
+    elements.append(leaderboard_title)
+
+    leaderboard_data = [
+        leaderboard_df.columns.tolist()
+    ]
+
+    leaderboard_data += (
+        leaderboard_df
+        .astype(str)
+        .values
+        .tolist()
+    )
+
+    leaderboard_table = Table(leaderboard_data)
+
+    leaderboard_table.setStyle(
+
+        TableStyle([
+
+            ("BACKGROUND", (0, 0), (-1, 0),
+             colors.lightblue),
+
+            ("GRID", (0, 0), (-1, -1),
+             1, colors.black),
+
+            ("FONTNAME", (0, 0), (-1, 0),
+             "Helvetica-Bold")
+
+        ])
+
+    )
+
+    elements.append(leaderboard_table)
+
+    # ---------------- BUILD PDF ---------------- #
+    doc.build(elements)
+
+    buffer.seek(0)
+
+    return buffer
+
+
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
     page_title="MCQ Analytics Dashboard",
@@ -537,3 +664,17 @@ if response_files and answer_files:
         file_name="complete_report.csv",
         mime="text/csv"
     )
+    # ---------------- PDF DOWNLOAD ---------------- #
+st.header("📄 Download PDF Report")
+
+pdf_file = create_pdf_report(
+    filtered_df,
+    leaderboard_df
+)
+
+st.download_button(
+    label="⬇️ Download PDF Report",
+    data=pdf_file,
+    file_name="mcq_analytics_report.pdf",
+    mime="application/pdf"
+)
