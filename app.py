@@ -344,14 +344,21 @@ if response_files and answer_files:
         df["Department"].unique()
     )
 
+    all_subjects = []
+
+    for item in df["Subject"]:
+    
+        split_subjects = str(item).split(",")
+    
+        for sub in split_subjects:
+    
+            all_subjects.append(
+                sub.strip().upper()
+            )
+    
     subjects = st.sidebar.multiselect(
         "Select Subject",
-        sorted(
-            set(
-                ",".join(df["Subject"])
-                .split(", ")
-            )
-        )
+        sorted(set(all_subjects))
     )
 
     # ---------------- FILTER DATA ---------------- #
@@ -369,19 +376,34 @@ if response_files and answer_files:
             filtered_df["Department"].isin(departments)
         ]
 
+   # ---------------- SUBJECT FILTER ---------------- #
     if subjects:
+
+        def subject_match(subject_text):
+    
+            # Convert:
+            # "PYTHON, JAVA"
+            # into list
+    
+            student_subjects = [
+                s.strip().upper()
+                for s in str(subject_text).split(",")
+            ]
+    
+            selected_subjects = [
+                s.strip().upper()
+                for s in subjects
+            ]
+    
+            # Check at least one match
+            return any(
+                sub in student_subjects
+                for sub in selected_subjects
+            )
     
         filtered_df = filtered_df[
             filtered_df["Subject"].apply(
-                lambda x:
-                any(
-                    sub.strip().upper()
-                    in [
-                        s.strip().upper()
-                        for s in x.split(",")
-                    ]
-                    for sub in subjects
-                )
+                subject_match
             )
         ]
 
