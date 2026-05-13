@@ -322,6 +322,13 @@ if response_files and answer_files:
         df,
         answer_df
     )
+    if df.empty:
+
+    st.error(
+        "❌ No matching subject data found"
+    )
+
+    st.stop()
 
     # ---------------- SIDEBAR FILTERS ---------------- #
     st.sidebar.header("🔍 Filters")
