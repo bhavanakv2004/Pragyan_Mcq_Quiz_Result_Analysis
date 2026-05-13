@@ -68,7 +68,7 @@ if not st.session_state.logged_in:
     )
 
     st.markdown(
-        '<div class="main-title">📊 Secure MCQ Analytics Dashboard</div>',
+        '<div class="main-title">📊 Smart MCQ Quiz Analytics Dashboard</div>',
         unsafe_allow_html=True
     )
 
