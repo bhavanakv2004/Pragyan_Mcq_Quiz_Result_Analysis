@@ -323,10 +323,10 @@ if response_files and answer_files:
         answer_df
     )
     if df.empty:
-
-    st.error(
-        "❌ No matching subject data found"
-    )
+    
+        st.error(
+            "❌ No matching subject data found"
+        )
 
     st.stop()
 
