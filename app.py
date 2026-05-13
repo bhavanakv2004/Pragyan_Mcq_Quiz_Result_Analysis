@@ -161,18 +161,59 @@ if not st.session_state.logged_in:
 # ---------------- TITLE ---------------- #
 st.title("📊 MCQ Analytics Dashboard")
 
-# ---------------- FILE UPLOAD ---------------- #
-response_files = st.file_uploader(
-    "📂 Upload Student Response Files",
-    type=["csv", "xlsx"],
-    accept_multiple_files=True
+# ---------------- UPLOAD MODE ---------------- #
+upload_mode = st.radio(
+    "📂 Select Upload Type",
+    ["Single Subject", "Multiple Subjects"],
+    horizontal=True
 )
 
-answer_files = st.file_uploader(
-    "📂 Upload Answer Key Files",
-    type=["csv", "xlsx"],
-    accept_multiple_files=True
-)
+# ---------------- SINGLE SUBJECT ---------------- #
+if upload_mode == "Single Subject":
+
+    response_files = [
+        st.file_uploader(
+            "Upload Student Response File",
+            type=["csv", "xlsx"],
+            key="single_response"
+        )
+    ]
+
+    answer_files = [
+        st.file_uploader(
+            "Upload Answer Key File",
+            type=["csv", "xlsx"],
+            key="single_answer"
+        )
+    ]
+
+# ---------------- MULTIPLE SUBJECT ---------------- #
+else:
+
+    response_files = st.file_uploader(
+        "Upload Multiple Student Response Files",
+        type=["csv", "xlsx"],
+        accept_multiple_files=True,
+        key="multi_response"
+    )
+
+    answer_files = st.file_uploader(
+        "Upload Multiple Answer Key Files",
+        type=["csv", "xlsx"],
+        accept_multiple_files=True,
+        key="multi_answer"
+    )
+
+# ---------------- REMOVE NONE VALUES ---------------- #
+response_files = [
+    file for file in response_files
+    if file is not None
+]
+
+answer_files = [
+    file for file in answer_files
+    if file is not None
+]
 
 # ---------------- PROCESS FILES ---------------- #
 if response_files and answer_files:
