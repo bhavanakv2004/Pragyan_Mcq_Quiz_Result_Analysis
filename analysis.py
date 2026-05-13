@@ -180,6 +180,18 @@ def calculate_score(df, answer_df):
         subject_students["Score"] = scores
 
         subject_results.append(subject_students)
+    # ---------------- COMBINE SAME STUDENT SCORES ---------------- #
+    final_df = merged_df.groupby(
+        ["Name", "Department", "College"],
+        as_index=False
+    ).agg({
+    
+        "Score": "sum",
+    
+        "Subject": lambda x:
+            ", ".join(sorted(set(x)))
+    
+    })    
 
     # ---------------- MERGE ALL SUBJECTS ---------------- #
     merged_df = pd.concat(
