@@ -168,17 +168,58 @@ if not st.session_state.logged_in:
 
     st.stop()
 
-# ---------------- SIDEBAR ---------------- #
-st.sidebar.success(
-    f"Logged in as: {st.session_state.username}"
+# ---------------- SIDEBAR FILTERS ---------------- #
+st.sidebar.header("🔍 Filters")
+
+college_filter = st.sidebar.multiselect(
+    "Select College",
+    df["College"].unique()
 )
 
-if st.sidebar.button("Logout"):
+dept_filter = st.sidebar.multiselect(
+    "Select Department",
+    df["Department"].unique()
+)
 
-    st.session_state.logged_in = False
-    st.session_state.username = ""
+subject_filter = st.sidebar.multiselect(
+    "Select Subject",
+    sorted(
+        set(
+            ",".join(df["Subject"])
+            .split(", ")
+        )
+    )
+)
 
-    st.rerun()
+# ---------------- FILTER DATA ---------------- #
+filtered_df = df.copy()
+
+if college_filter:
+
+    filtered_df = filtered_df[
+        filtered_df["College"].isin(
+            college_filter
+        )
+    ]
+
+if dept_filter:
+
+    filtered_df = filtered_df[
+        filtered_df["Department"].isin(
+            dept_filter
+        )
+    ]
+
+if subject_filter:
+
+    filtered_df = filtered_df[
+        filtered_df["Subject"].apply(
+            lambda x: any(
+                sub in x
+                for sub in subject_filter
+            )
+        )
+    ]
 
 # ---------------- TITLE ---------------- #
 st.title("📊  MCQ Analytics")
@@ -331,7 +372,7 @@ if response_files and answer_files:
     # ---------------- LEADERBOARD ---------------- #
     st.header("🏆 Leaderboard")
 
-    leaderboard_df = leaderboard(df)
+    leaderboard_df = leaderboard(filtered_df)
 
     st.dataframe(leaderboard_df)
 
