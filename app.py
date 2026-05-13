@@ -287,14 +287,15 @@ if response_files and answer_files:
     if departments:
         filtered_df = filtered_df[filtered_df["Department"].isin(departments)]
     if subjects:
-    filtered_df = filtered_df[
-        filtered_df["Subject"].apply(
-            lambda x: any(
-                sub in x
-                for sub in subjects
+        
+        filtered_df = filtered_df[
+            filtered_df["Subject"].apply(
+                lambda x: any(
+                    sub in x
+                    for sub in subjects
+                )
             )
-        )
-    ]
+        ]
 
     # ---------------- KPI ---------------- #
     st.header("📌 Key Metrics")
