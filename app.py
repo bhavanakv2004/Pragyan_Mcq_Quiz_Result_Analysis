@@ -228,15 +228,19 @@ if response_files and answer_files:
 
             temp_df = load_file(file)
 
-            subject_name = (
-                file.name
-                .split(".")[0]
-                .replace(" (1)", "")
-                .replace(" (2)", "")
-                .replace(" (3)", "")
-                .replace("_answers", "")
-                .strip()
-            )
+           subject_name = (
+            file.name
+            .split(".")[0]
+            .replace("_student", "")
+            .replace("_answers", "")
+            .replace(" student", "")
+            .replace(" answers", "")
+            .replace(" (1)", "")
+            .replace(" (2)", "")
+            .replace(" (3)", "")
+            .strip()
+            .upper()
+        )
 
             temp_df["Subject"] = subject_name
 
@@ -256,14 +260,18 @@ if response_files and answer_files:
             ans_df = load_file(file)
 
             subject_name = (
-                file.name
-                .split(".")[0]
-                .replace(" (1)", "")
-                .replace(" (2)", "")
-                .replace(" (3)", "")
-                .replace("_answers", "")
-                .strip()
-            )
+            file.name
+            .split(".")[0]
+            .replace("_student", "")
+            .replace("_answers", "")
+            .replace(" student", "")
+            .replace(" answers", "")
+            .replace(" (1)", "")
+            .replace(" (2)", "")
+            .replace(" (3)", "")
+            .strip()
+            .upper()
+        )
 
             ans_df["Subject"] = subject_name
 
