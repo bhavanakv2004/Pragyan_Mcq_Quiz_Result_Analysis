@@ -124,21 +124,20 @@ def validate_files(df, answer_df):
                 )
 
     return True, "✅ Files validated successfully"
+    
 # ---------------- CALCULATE SCORE ---------------- #
 def calculate_score(df, answer_df):
 
-    all_results = []
+    subject_results = []
 
     subjects = df["Subject"].unique()
 
     for subject in subjects:
 
-        # Subject-wise students
         subject_students = df[
             df["Subject"] == subject
         ].copy()
 
-        # Subject-wise answers
         subject_answers = answer_df[
             answer_df["Subject"] == subject
         ]
@@ -180,13 +179,26 @@ def calculate_score(df, answer_df):
 
         subject_students["Score"] = scores
 
-        all_results.append(subject_students)
+        subject_results.append(subject_students)
 
-    # Merge all subjects
-    final_df = pd.concat(
-        all_results,
+    # Merge subject results
+    merged_df = pd.concat(
+        subject_results,
         ignore_index=True
     )
+
+    # ---------------- COMBINE SAME STUDENT ---------------- #
+    final_df = merged_df.groupby(
+        ["Name", "Department", "College"],
+        as_index=False
+    ).agg({
+        "Score": "sum",
+        "Subject": lambda x: ", ".join(
+            sorted(set(x))
+        )
+    })
+
+    return final_df
 
     # ---------------- TOTAL SCORE ---------------- #
     grouped_df = final_df.groupby(
