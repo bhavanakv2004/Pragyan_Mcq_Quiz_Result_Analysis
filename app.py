@@ -5,7 +5,6 @@ import seaborn as sns
 
 from analysis import *
 from auth import *
-
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
     page_title=" Smart MCQ Quiz Analytics Dashboard",
