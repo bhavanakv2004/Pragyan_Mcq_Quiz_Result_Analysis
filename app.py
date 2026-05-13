@@ -87,11 +87,7 @@ if not st.session_state.logged_in:
 
     with col2:
 
-        st.markdown(
-            '<div class="login-box">',
-            unsafe_allow_html=True
-        )
-
+        
         # -------- REGISTER -------- #
         if option == "Register":
 
