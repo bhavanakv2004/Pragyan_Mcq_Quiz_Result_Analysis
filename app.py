@@ -665,16 +665,16 @@ if response_files and answer_files:
         mime="text/csv"
     )
     # ---------------- PDF DOWNLOAD ---------------- #
-st.header("📄 Download PDF Report")
-
-pdf_file = create_pdf_report(
-    filtered_df,
-    leaderboard_df
-)
-
-st.download_button(
-    label="⬇️ Download PDF Report",
-    data=pdf_file,
-    file_name="mcq_analytics_report.pdf",
-    mime="application/pdf"
-)
+    st.header("📄 Download PDF Report")
+    
+    pdf_file = create_pdf_report(
+        filtered_df,
+        leaderboard_df
+    )
+    
+    st.download_button(
+        label="⬇️ Download PDF Report",
+        data=pdf_file,
+        file_name="mcq_analytics_report.pdf",
+        mime="application/pdf"
+    )
