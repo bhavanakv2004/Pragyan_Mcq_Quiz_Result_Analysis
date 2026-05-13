@@ -124,8 +124,8 @@ def validate_files(df, answer_df):
                 )
 
     return True, "✅ Files validated successfully"
-    
-# ---------------- CALCULATE SCORE ---------------- #
+
+    # ---------------- CALCULATE SCORE ---------------- #
 def calculate_score(df, answer_df):
 
     subject_results = []
@@ -181,11 +181,24 @@ def calculate_score(df, answer_df):
 
         subject_results.append(subject_students)
 
-    # Merge subject results
+    # ---------------- MERGE ALL SUBJECTS ---------------- #
     merged_df = pd.concat(
         subject_results,
         ignore_index=True
     )
+
+    # ---------------- CREATE FINAL SCOREBOARD ---------------- #
+    final_df = merged_df.groupby(
+        ["Name", "Department", "College"],
+        as_index=False
+    ).agg({
+        "Score": "sum",
+        "Subject": lambda x: ", ".join(
+            sorted(set(x))
+        )
+    })
+
+    return merged_df, final_df
 
     # ---------------- COMBINE SAME STUDENT ---------------- #
     final_df = merged_df.groupby(
