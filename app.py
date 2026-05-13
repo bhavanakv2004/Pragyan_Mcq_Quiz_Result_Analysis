@@ -8,7 +8,7 @@ from auth import *
 
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
-    page_title="Smart MCQ Quiz Analytics Dashboard",
+    page_title="MCQ Analytics Dashboard",
     layout="wide"
 )
 
@@ -19,48 +19,45 @@ if "logged_in" not in st.session_state:
 if "username" not in st.session_state:
     st.session_state.username = ""
 
-# ---------------- LOGIN SYSTEM ---------------- #
+# ---------------- LOGIN PAGE ---------------- #
 if not st.session_state.logged_in:
 
-    st.markdown(
-        """
-        <style>
+    st.markdown("""
+    <style>
 
-        .stApp {
-            background: linear-gradient(
-                to right,
-                #0f2027,
-                #203a43,
-                #2c5364
-            );
-        }
+    .stApp {
+        background: linear-gradient(
+            to right,
+            #0f2027,
+            #203a43,
+            #2c5364
+        );
+    }
 
-        .main-title {
-            text-align: center;
-            color: white;
-            font-size: 42px;
-            font-weight: bold;
-            margin-top: 20px;
-        }
+    .main-title {
+        text-align: center;
+        color: white;
+        font-size: 42px;
+        font-weight: bold;
+        margin-top: 30px;
+    }
 
-        .sub-title {
-            text-align: center;
-            color: #dddddd;
-            font-size: 18px;
-            margin-bottom: 30px;
-        }
+    .sub-title {
+        text-align: center;
+        color: #dddddd;
+        font-size: 18px;
+        margin-bottom: 30px;
+    }
 
-        div.stButton > button {
-            width: 100%;
-            height: 50px;
-            border-radius: 10px;
-            font-size: 18px;
-        }
+    div.stButton > button {
+        width: 100%;
+        height: 45px;
+        border-radius: 10px;
+        font-size: 18px;
+    }
 
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    </style>
+    """, unsafe_allow_html=True)
 
     st.markdown(
         '<div class="main-title">📊 Smart MCQ Quiz Analytics Dashboard</div>',
@@ -78,7 +75,7 @@ if not st.session_state.logged_in:
         horizontal=True
     )
 
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2, col3 = st.columns([1,2,1])
 
     with col2:
 
@@ -103,9 +100,7 @@ if not st.session_state.logged_in:
 
                 if new_pass != confirm_pass:
 
-                    st.error(
-                        "❌ Passwords do not match"
-                    )
+                    st.error("❌ Passwords do not match")
 
                 else:
 
@@ -115,11 +110,9 @@ if not st.session_state.logged_in:
                     )
 
                     if success:
-
                         st.success(msg)
 
                     else:
-
                         st.error(msg)
 
         # ---------------- LOGIN ---------------- #
@@ -127,9 +120,7 @@ if not st.session_state.logged_in:
 
             st.subheader("🔐 Login")
 
-            username = st.text_input(
-                "Username"
-            )
+            username = st.text_input("Username")
 
             password = st.text_input(
                 "Password",
@@ -161,7 +152,7 @@ if not st.session_state.logged_in:
 # ---------------- TITLE ---------------- #
 st.title("📊 MCQ Analytics Dashboard")
 
-# ---------------- UPLOAD MODE ---------------- #
+# ---------------- UPLOAD TYPE ---------------- #
 upload_mode = st.radio(
     "📂 Select Upload Type",
     ["Single Subject", "Multiple Subjects"],
@@ -204,7 +195,7 @@ else:
         key="multi_answer"
     )
 
-# ---------------- REMOVE NONE VALUES ---------------- #
+# ---------------- REMOVE EMPTY ---------------- #
 response_files = [
     file for file in response_files
     if file is not None
@@ -221,66 +212,67 @@ if response_files and answer_files:
     all_students = []
     all_answers = []
 
-    # -------- RESPONSE FILES -------- #
-for file in response_files:
+    # ---------------- RESPONSE FILES ---------------- #
+    for file in response_files:
 
-    try:
+        try:
 
-        temp_df = load_file(file)
+            temp_df = load_file(file)
 
-        subject_name = (
-            file.name
-            .split(".")[0]
-            .replace("_student", "")
-            .replace("_answers", "")
-            .replace(" student", "")
-            .replace(" answers", "")
-            .replace(" (1)", "")
-            .replace(" (2)", "")
-            .replace(" (3)", "")
-            .strip()
-            .upper()
-        )
+            subject_name = (
+                file.name
+                .split(".")[0]
+                .replace("_student", "")
+                .replace("_answers", "")
+                .replace(" student", "")
+                .replace(" answers", "")
+                .replace(" (1)", "")
+                .replace(" (2)", "")
+                .replace(" (3)", "")
+                .strip()
+                .upper()
+            )
 
-        temp_df["Subject"] = subject_name
+            temp_df["Subject"] = subject_name
 
-        all_students.append(temp_df)
+            all_students.append(temp_df)
 
-    except Exception as e:
+        except Exception as e:
 
-        st.error(
-            f"❌ Error reading {file.name}: {e}"
-        )
-    # -------- ANSWER FILES -------- #
-for file in answer_files:
+            st.error(
+                f"❌ Error reading {file.name}: {e}"
+            )
 
-    try:
+    # ---------------- ANSWER FILES ---------------- #
+    for file in answer_files:
 
-        ans_df = load_file(file)
+        try:
 
-        subject_name = (
-            file.name
-            .split(".")[0]
-            .replace("_student", "")
-            .replace("_answers", "")
-            .replace(" student", "")
-            .replace(" answers", "")
-            .replace(" (1)", "")
-            .replace(" (2)", "")
-            .replace(" (3)", "")
-            .strip()
-            .upper()
-        )
+            ans_df = load_file(file)
 
-        ans_df["Subject"] = subject_name
+            subject_name = (
+                file.name
+                .split(".")[0]
+                .replace("_student", "")
+                .replace("_answers", "")
+                .replace(" student", "")
+                .replace(" answers", "")
+                .replace(" (1)", "")
+                .replace(" (2)", "")
+                .replace(" (3)", "")
+                .strip()
+                .upper()
+            )
 
-        all_answers.append(ans_df)
+            ans_df["Subject"] = subject_name
 
-    except Exception as e:
+            all_answers.append(ans_df)
 
-        st.error(
-            f"❌ Error reading {file.name}: {e}"
-        )
+        except Exception as e:
+
+            st.error(
+                f"❌ Error reading {file.name}: {e}"
+            )
 
     # ---------------- EMPTY CHECK ---------------- #
     if len(all_students) == 0:
@@ -299,7 +291,7 @@ for file in answer_files:
 
         st.stop()
 
-    # ---------------- MERGE FILES ---------------- #
+    # ---------------- MERGE ---------------- #
     df = pd.concat(
         all_students,
         ignore_index=True
@@ -310,7 +302,7 @@ for file in answer_files:
         ignore_index=True
     )
 
-    # ---------------- VALIDATE ---------------- #
+    # ---------------- VALIDATION ---------------- #
     valid, message = validate_files(
         df,
         answer_df
@@ -329,13 +321,15 @@ for file in answer_files:
         df,
         answer_df
     )
+
+    # ---------------- EMPTY CHECK ---------------- #
     if df.empty:
-    
+
         st.error(
             "❌ No matching subject data found"
         )
 
-    st.stop()
+        st.stop()
 
     # ---------------- SIDEBAR FILTERS ---------------- #
     st.sidebar.header("🔍 Filters")
@@ -348,11 +342,6 @@ for file in answer_files:
     departments = st.sidebar.multiselect(
         "Select Department",
         df["Department"].unique()
-    )
-
-    students = st.sidebar.multiselect(
-        "Select Student",
-        df["Name"].unique()
     )
 
     subjects = st.sidebar.multiselect(
@@ -380,12 +369,6 @@ for file in answer_files:
             filtered_df["Department"].isin(departments)
         ]
 
-    if students:
-
-        filtered_df = filtered_df[
-            filtered_df["Name"].isin(students)
-        ]
-
     if subjects:
 
         filtered_df = filtered_df[
@@ -409,10 +392,7 @@ for file in answer_files:
 
     col2.metric(
         "Average Score",
-        round(
-            filtered_df["Score"].mean(),
-            2
-        )
+        round(filtered_df["Score"].mean(), 2)
     )
 
     col3.metric(
@@ -455,65 +435,11 @@ for file in answer_files:
     # ---------------- DEPARTMENT PERFORMANCE ---------------- #
     st.header("🏢 Department Performance")
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        dept = department_performance(
-            filtered_df
-        )
-
-        fig, ax = plt.subplots()
-
-        dept.plot(
-            kind="bar",
-            ax=ax
-        )
-
-        ax.set_title(
-            "Department Performance"
-        )
-
-        st.pyplot(fig)
-
-    with col2:
-
-        pivot = heatmap_data(
-            filtered_df
-        )
-
-        fig, ax = plt.subplots()
-
-        sns.heatmap(
-            pivot,
-            annot=True,
-            cmap="coolwarm",
-            ax=ax
-        )
-
-        st.pyplot(fig)
-
-    # ---------------- COLLEGE PERFORMANCE ---------------- #
-    st.header("🏫 College Ranking")
-
-    college_df = (
-        filtered_df.groupby("College")["Score"]
-        .mean()
-        .sort_values(ascending=False)
+    dept_df = department_performance(
+        filtered_df
     )
 
-    fig, ax = plt.subplots()
-
-    college_df.plot(
-        kind="barh",
-        ax=ax
-    )
-
-    ax.set_title(
-        "College Performance"
-    )
-
-    st.pyplot(fig)
+    st.bar_chart(dept_df)
 
     # ---------------- HEATMAP ---------------- #
     st.header("🔥 Department Heatmap")
