@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 
-
 # ---------------- LOAD FILE ---------------- #
 def load_file(file):
 
