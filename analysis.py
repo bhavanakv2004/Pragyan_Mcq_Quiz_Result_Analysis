@@ -1,23 +1,24 @@
 import pandas as pd
 import numpy as np
 
+
 # ---------------- LOAD FILE ---------------- #
 def load_file(file):
 
-    # CSV FILE
+    # ---------------- CSV ---------------- #
     if file.name.endswith(".csv"):
 
         df = pd.read_csv(file)
 
-    # EXCEL FILE
+    # ---------------- EXCEL ---------------- #
     else:
 
         df = pd.read_excel(file)
 
-    # Remove spaces from columns
+    # ---------------- CLEAN COLUMN NAMES ---------------- #
     df.columns = df.columns.str.strip()
 
-    # Fill empty values
+    # ---------------- FILL EMPTY VALUES ---------------- #
     df.fillna("NOT ANSWERED", inplace=True)
 
     # ---------------- AUTO UPPERCASE ---------------- #
@@ -43,6 +44,7 @@ def load_file(file):
 # ---------------- VALIDATE FILES ---------------- #
 def validate_files(df, answer_df):
 
+    # ---------------- REQUIRED STUDENT COLUMNS ---------------- #
     required_cols = [
         "Name",
         "Department",
@@ -56,6 +58,7 @@ def validate_files(df, answer_df):
 
             return False, f"❌ Missing column: {col}"
 
+    # ---------------- REQUIRED ANSWER COLUMNS ---------------- #
     answer_required = [
         "Question_ID",
         "Answer",
@@ -70,6 +73,22 @@ def validate_files(df, answer_df):
                 f"❌ Missing answer key column: {col}"
             )
 
+    # ---------------- SUBJECT CLEANING ---------------- #
+    df["Subject"] = (
+        df["Subject"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    answer_df["Subject"] = (
+        answer_df["Subject"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    # ---------------- VALID ANSWERS ---------------- #
     valid_options = [
         "A",
         "B",
@@ -78,12 +97,10 @@ def validate_files(df, answer_df):
         "NOT ANSWERED"
     ]
 
-    # ---------------- SUBJECT-WISE VALIDATION ---------------- #
     subjects = answer_df["Subject"].unique()
 
     for subject in subjects:
 
-        # Filter subject data
         subject_students = df[
             df["Subject"] == subject
         ].copy()
@@ -92,18 +109,21 @@ def validate_files(df, answer_df):
             answer_df["Subject"] == subject
         ]
 
+        # Skip if no student data
+        if subject_students.empty:
+
+            continue
+
         qids = subject_answers[
             "Question_ID"
         ].tolist()
 
         for qid in qids:
 
-            # Skip if question column missing
             if qid not in subject_students.columns:
 
                 continue
 
-            # Fill NaN values
             subject_students[qid] = (
                 subject_students[qid]
                 .fillna("NOT ANSWERED")
@@ -125,10 +145,26 @@ def validate_files(df, answer_df):
 
     return True, "✅ Files validated successfully"
 
-   # ---------------- CALCULATE SCORE ---------------- #
+
+# ---------------- CALCULATE SCORE ---------------- #
 def calculate_score(df, answer_df):
 
     subject_results = []
+
+    # ---------------- CLEAN SUBJECT NAMES ---------------- #
+    df["Subject"] = (
+        df["Subject"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    answer_df["Subject"] = (
+        answer_df["Subject"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
 
     subjects = df["Subject"].unique()
 
@@ -141,10 +177,15 @@ def calculate_score(df, answer_df):
 
         subject_answers = answer_df[
             answer_df["Subject"] == subject
-        ]
+        ].copy()
 
-        # Skip empty subject
-        if subject_students.empty or subject_answers.empty:
+        # ---------------- SKIP EMPTY ---------------- #
+        if subject_students.empty:
+
+            continue
+
+        if subject_answers.empty:
+
             continue
 
         # ---------------- ANSWER KEY ---------------- #
@@ -184,11 +225,12 @@ def calculate_score(df, answer_df):
 
             scores.append(score)
 
+        # ---------------- ADD SCORE ---------------- #
         subject_students["Score"] = scores
 
         subject_results.append(subject_students)
 
-    # ---------------- CHECK EMPTY ---------------- #
+    # ---------------- EMPTY CHECK ---------------- #
     if len(subject_results) == 0:
 
         empty_df = pd.DataFrame()
@@ -201,14 +243,16 @@ def calculate_score(df, answer_df):
         ignore_index=True
     )
 
-    # ---------------- COMBINE SCORES ---------------- #
+    # ---------------- FINAL LEADERBOARD ---------------- #
     final_df = merged_df.groupby(
         ["Name", "Department", "College"],
         as_index=False
     ).agg({
 
+        # SUM MULTIPLE SUBJECT SCORES
         "Score": "sum",
 
+        # COMBINE SUBJECT NAMES
         "Subject": lambda x:
             ", ".join(sorted(set(x)))
 
@@ -221,61 +265,8 @@ def calculate_score(df, answer_df):
     )
 
     return merged_df, final_df
-    # ---------------- COMBINE SAME STUDENT SCORES ---------------- #
-    final_df = merged_df.groupby(
-        ["Name", "Department", "College"],
-        as_index=False
-    ).agg({
-    
-        "Score": "sum",
-    
-        "Subject": lambda x:
-            ", ".join(sorted(set(x)))
-    
-    })    
 
-    # ---------------- MERGE ALL SUBJECTS ---------------- #
-    merged_df = pd.concat(
-        subject_results,
-        ignore_index=True
-    )
 
-    # ---------------- CREATE FINAL SCOREBOARD ---------------- #
-    final_df = merged_df.groupby(
-        ["Name", "Department", "College"],
-        as_index=False
-    ).agg({
-        "Score": "sum",
-        "Subject": lambda x: ", ".join(
-            sorted(set(x))
-        )
-    })
-
-    return merged_df, final_df
-
-    # ---------------- COMBINE SAME STUDENT ---------------- #
-    final_df = merged_df.groupby(
-        ["Name", "Department", "College"],
-        as_index=False
-    ).agg({
-        "Score": "sum",
-        "Subject": lambda x: ", ".join(
-            sorted(set(x))
-        )
-    })
-
-    return final_df
-
-    # ---------------- TOTAL SCORE ---------------- #
-    grouped_df = final_df.groupby(
-        ["Name", "Department", "College"],
-        as_index=False
-    ).agg({
-        "Score": "sum",
-        "Subject": lambda x: ", ".join(sorted(set(x)))
-    })
-
-    return grouped_df
 # ---------------- QUESTION ANALYSIS ---------------- #
 def question_analysis(df, answer_df):
 
