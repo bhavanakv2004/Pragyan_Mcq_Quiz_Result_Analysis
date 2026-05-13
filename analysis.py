@@ -125,7 +125,7 @@ def validate_files(df, answer_df):
 
     return True, "✅ Files validated successfully"
 
-    # ---------------- CALCULATE SCORE ---------------- #
+   # ---------------- CALCULATE SCORE ---------------- #
 def calculate_score(df, answer_df):
 
     subject_results = []
@@ -134,6 +134,7 @@ def calculate_score(df, answer_df):
 
     for subject in subjects:
 
+        # ---------------- FILTER SUBJECT ---------------- #
         subject_students = df[
             df["Subject"] == subject
         ].copy()
@@ -142,6 +143,11 @@ def calculate_score(df, answer_df):
             answer_df["Subject"] == subject
         ]
 
+        # Skip empty subject
+        if subject_students.empty or subject_answers.empty:
+            continue
+
+        # ---------------- ANSWER KEY ---------------- #
         answer_key = dict(
             zip(
                 subject_answers["Question_ID"],
@@ -151,6 +157,7 @@ def calculate_score(df, answer_df):
 
         scores = []
 
+        # ---------------- SCORE CALCULATION ---------------- #
         for _, row in subject_students.iterrows():
 
             score = 0
@@ -180,6 +187,40 @@ def calculate_score(df, answer_df):
         subject_students["Score"] = scores
 
         subject_results.append(subject_students)
+
+    # ---------------- CHECK EMPTY ---------------- #
+    if len(subject_results) == 0:
+
+        empty_df = pd.DataFrame()
+
+        return empty_df, empty_df
+
+    # ---------------- MERGE ALL SUBJECTS ---------------- #
+    merged_df = pd.concat(
+        subject_results,
+        ignore_index=True
+    )
+
+    # ---------------- COMBINE SCORES ---------------- #
+    final_df = merged_df.groupby(
+        ["Name", "Department", "College"],
+        as_index=False
+    ).agg({
+
+        "Score": "sum",
+
+        "Subject": lambda x:
+            ", ".join(sorted(set(x)))
+
+    })
+
+    # ---------------- SORT ---------------- #
+    final_df = final_df.sort_values(
+        "Score",
+        ascending=False
+    )
+
+    return merged_df, final_df
     # ---------------- COMBINE SAME STUDENT SCORES ---------------- #
     final_df = merged_df.groupby(
         ["Name", "Department", "College"],
