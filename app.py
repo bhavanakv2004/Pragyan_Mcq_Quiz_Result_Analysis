@@ -5,11 +5,13 @@ import seaborn as sns
 
 from analysis import *
 from auth import *
+
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
-    page_title=" Smart MCQ Quiz Analytics Dashboard",
-    layout="wide",
-    )
+    page_title="Smart MCQ Quiz Analytics Dashboard",
+    layout="wide"
+)
+
 # ---------------- SESSION ---------------- #
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -48,12 +50,6 @@ if not st.session_state.logged_in:
             margin-bottom: 30px;
         }
 
-        .login-box {
-            background-color: rgba(255,255,255,0.08);
-            padding: 35px;
-            border-radius: 20px;
-        }
-
         div.stButton > button {
             width: 100%;
             height: 50px;
@@ -82,105 +78,96 @@ if not st.session_state.logged_in:
         horizontal=True
     )
 
-    col1, col2, col3 = st.columns([1,2,1])
+    col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
 
-        
-        # -------- REGISTER -------- #
+        # ---------------- REGISTER ---------------- #
         if option == "Register":
 
             st.subheader("📝 Register")
 
-            new_user = st.text_input(
-                "Username"
-            )
+            new_user = st.text_input("Username")
 
             new_pass = st.text_input(
                 "Password",
                 type="password"
             )
+
             confirm_pass = st.text_input(
                 "Confirm Password",
                 type="password"
             )
+
             if st.button("Register"):
+
                 if new_pass != confirm_pass:
+
                     st.error(
                         "❌ Passwords do not match"
                     )
+
                 else:
+
                     success, msg = register_user(
                         new_user,
                         new_pass
                     )
+
                     if success:
+
                         st.success(msg)
+
                     else:
+
                         st.error(msg)
 
-        # -------- LOGIN -------- #
+        # ---------------- LOGIN ---------------- #
         else:
+
             st.subheader("🔐 Login")
+
             username = st.text_input(
                 "Username"
             )
+
             password = st.text_input(
                 "Password",
                 type="password"
             )
+
             if st.button("Login"):
+
                 valid = login_user(
                     username,
                     password
                 )
+
                 if valid:
+
                     st.session_state.logged_in = True
                     st.session_state.username = username
+
                     st.rerun()
+
                 else:
+
                     st.error(
                         "❌ Invalid Username or Password"
                     )
-        st.markdown(
-            '</div>',
-            unsafe_allow_html=True
-        )
+
     st.stop()
 
-# ---------------- FILTER DATA ---------------- #
-filtered_df = df.copy()
-if college_filter:
-    filtered_df = filtered_df[
-        filtered_df["College"].isin(
-            college_filter
-        )
-    ]
-if dept_filter:
-    filtered_df = filtered_df[
-        filtered_df["Department"].isin(
-            dept_filter
-        )
-    ]
-if subject_filter:
-    filtered_df = filtered_df[
-        filtered_df["Subject"].apply(
-            lambda x: any(
-                sub in x
-                for sub in subject_filter
-            )
-        )
-    ]
-
 # ---------------- TITLE ---------------- #
-st.title("📊  MCQ Analytics")
+st.title("📊 MCQ Analytics Dashboard")
 
-# ---------------- MULTIPLE FILE UPLOAD ---------------- #
+# ---------------- FILE UPLOAD ---------------- #
 response_files = st.file_uploader(
     "📂 Upload Student Response Files",
     type=["csv", "xlsx"],
     accept_multiple_files=True
 )
+
 answer_files = st.file_uploader(
     "📂 Upload Answer Key Files",
     type=["csv", "xlsx"],
@@ -189,105 +176,163 @@ answer_files = st.file_uploader(
 
 # ---------------- PROCESS FILES ---------------- #
 if response_files and answer_files:
+
     all_students = []
     all_answers = []
 
-    # -------- RESPONSE FILES -------- #
+    # ---------------- RESPONSE FILES ---------------- #
     for file in response_files:
+
         try:
+
             temp_df = load_file(file)
+
             subject_name = (
                 file.name
                 .split(".")[0]
+                .replace(" (1)", "")
                 .replace(" (2)", "")
                 .replace(" (3)", "")
                 .replace("_answers", "")
                 .strip()
             )
+
             temp_df["Subject"] = subject_name
+
             all_students.append(temp_df)
+
         except Exception as e:
+
             st.error(
                 f"❌ Error reading {file.name}: {e}"
             )
 
-    # -------- ANSWER FILES -------- #
+    # ---------------- ANSWER FILES ---------------- #
     for file in answer_files:
+
         try:
+
             ans_df = load_file(file)
+
             subject_name = (
                 file.name
                 .split(".")[0]
+                .replace(" (1)", "")
                 .replace(" (2)", "")
                 .replace(" (3)", "")
                 .replace("_answers", "")
                 .strip()
             )
+
             ans_df["Subject"] = subject_name
+
             all_answers.append(ans_df)
+
         except Exception as e:
+
             st.error(
                 f"❌ Error reading {file.name}: {e}"
             )
 
-    # -------- EMPTY CHECK -------- #
+    # ---------------- EMPTY CHECK ---------------- #
     if len(all_students) == 0:
+
         st.warning(
             "⚠️ No valid student files uploaded"
         )
+
         st.stop()
+
     if len(all_answers) == 0:
+
         st.warning(
             "⚠️ No valid answer files uploaded"
         )
+
         st.stop()
 
-    # -------- MERGE FILES -------- #
+    # ---------------- MERGE FILES ---------------- #
     df = pd.concat(
         all_students,
         ignore_index=True
     )
+
     answer_df = pd.concat(
         all_answers,
         ignore_index=True
     )
 
-    # ---------------- VALIDATION ---------------- #
+    # ---------------- VALIDATE ---------------- #
     valid, message = validate_files(
         df,
         answer_df
     )
+
     if not valid:
+
         st.error(message)
+
         st.stop()
+
     st.success(message)
 
     # ---------------- SCORE ---------------- #
     raw_df, df = calculate_score(
-    df,
-    answer_df
+        df,
+        answer_df
     )
-     # ---------------- SIDEBAR FILTERS ---------------- #
+
+    # ---------------- SIDEBAR FILTERS ---------------- #
     st.sidebar.header("🔍 Filters")
-    colleges = st.sidebar.multiselect("Select College", df["College"].unique())
-    departments = st.sidebar.multiselect("Select Department", df["Department"].unique())
-    students = st.sidebar.multiselect("Select Student", df["Name"].unique())
+
+    colleges = st.sidebar.multiselect(
+        "Select College",
+        df["College"].unique()
+    )
+
+    departments = st.sidebar.multiselect(
+        "Select Department",
+        df["Department"].unique()
+    )
+
+    students = st.sidebar.multiselect(
+        "Select Student",
+        df["Name"].unique()
+    )
+
     subjects = st.sidebar.multiselect(
-    "Select Subject",
-    sorted(
-        set(
-            ",".join(df["Subject"])
-            .split(", ")
+        "Select Subject",
+        sorted(
+            set(
+                ",".join(df["Subject"])
+                .split(", ")
+            )
         )
     )
-)            
+
+    # ---------------- FILTER DATA ---------------- #
     filtered_df = df.copy()
+
     if colleges:
-        filtered_df = filtered_df[filtered_df["College"].isin(colleges)]
+
+        filtered_df = filtered_df[
+            filtered_df["College"].isin(colleges)
+        ]
+
     if departments:
-        filtered_df = filtered_df[filtered_df["Department"].isin(departments)]
+
+        filtered_df = filtered_df[
+            filtered_df["Department"].isin(departments)
+        ]
+
+    if students:
+
+        filtered_df = filtered_df[
+            filtered_df["Name"].isin(students)
+        ]
+
     if subjects:
-        
+
         filtered_df = filtered_df[
             filtered_df["Subject"].apply(
                 lambda x: any(
@@ -299,67 +344,138 @@ if response_files and answer_files:
 
     # ---------------- KPI ---------------- #
     st.header("📌 Key Metrics")
+
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Students",len(filtered_df))
-    col2.metric("Average Score",round(filtered_df["Score"].mean(), 2))
-    col3.metric("Highest Score",filtered_df["Score"].max())
-    col4.metric("Lowest Score",filtered_df["Score"].min())
+
+    col1.metric(
+        "Total Students",
+        len(filtered_df)
+    )
+
+    col2.metric(
+        "Average Score",
+        round(
+            filtered_df["Score"].mean(),
+            2
+        )
+    )
+
+    col3.metric(
+        "Highest Score",
+        filtered_df["Score"].max()
+    )
+
+    col4.metric(
+        "Lowest Score",
+        filtered_df["Score"].min()
+    )
 
     # ---------------- LEADERBOARD ---------------- #
     st.header("🏆 Leaderboard")
+
     leaderboard_df = leaderboard(filtered_df)
+
     st.dataframe(leaderboard_df)
 
     # ---------------- QUESTION ANALYSIS ---------------- #
     st.header("❓ Question Analysis")
 
     q_analysis = question_analysis(
-    raw_df,
-    answer_df
+        raw_df,
+        answer_df
     )
+
     st.dataframe(q_analysis)
 
     # ---------------- ATTEMPT RATE ---------------- #
     st.header("📌 Attempt Rate")
+
     attempt_df = attempt_rate(
-    raw_df,
-    answer_df
+        raw_df,
+        answer_df
     )
+
     st.dataframe(attempt_df)
-      # ---------------- DEPARTMENT PERFORMANCE ---------------- #
+
+    # ---------------- DEPARTMENT PERFORMANCE ---------------- #
     st.header("🏢 Department Performance")
+
     col1, col2 = st.columns(2)
+
     with col1:
-        dept = department_performance(filtered_df)
+
+        dept = department_performance(
+            filtered_df
+        )
+
         fig, ax = plt.subplots()
-        dept.plot(kind="bar", ax=ax)
-        ax.set_title("Department Performance")
+
+        dept.plot(
+            kind="bar",
+            ax=ax
+        )
+
+        ax.set_title(
+            "Department Performance"
+        )
+
         st.pyplot(fig)
 
     with col2:
-        pivot = heatmap_data(filtered_df)
+
+        pivot = heatmap_data(
+            filtered_df
+        )
+
         fig, ax = plt.subplots()
-        sns.heatmap(pivot, annot=True, cmap="coolwarm", ax=ax)
+
+        sns.heatmap(
+            pivot,
+            annot=True,
+            cmap="coolwarm",
+            ax=ax
+        )
+
         st.pyplot(fig)
 
     # ---------------- COLLEGE PERFORMANCE ---------------- #
     st.header("🏫 College Ranking")
-    college_df = filtered_df.groupby("College")["Score"].mean().sort_values(ascending=False)
+
+    college_df = (
+        filtered_df.groupby("College")["Score"]
+        .mean()
+        .sort_values(ascending=False)
+    )
+
     fig, ax = plt.subplots()
-    college_df.plot(kind="barh", ax=ax)
-    ax.set_title("College Performance")
+
+    college_df.plot(
+        kind="barh",
+        ax=ax
+    )
+
+    ax.set_title(
+        "College Performance"
+    )
+
     st.pyplot(fig)
 
     # ---------------- HEATMAP ---------------- #
     st.header("🔥 Department Heatmap")
-    heatmap_df = heatmap_data(filtered_df)
+
+    heatmap_df = heatmap_data(
+        filtered_df
+    )
+
     fig, ax = plt.subplots(
         figsize=(8, 5)
     )
+
     sns.heatmap(
         heatmap_df,
         annot=True,
         cmap="coolwarm",
         ax=ax
     )
+
     st.pyplot(fig)
