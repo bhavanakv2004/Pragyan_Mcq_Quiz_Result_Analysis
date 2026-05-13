@@ -308,7 +308,8 @@ if response_files and answer_files:
     colleges = st.sidebar.multiselect("Select College", df["College"].unique())
     departments = st.sidebar.multiselect("Select Department", df["Department"].unique())
     students = st.sidebar.multiselect("Select Student", df["Name"].unique())
-
+    subject = st.sidebar.multiselect("Select Subject", df["Subject"].unique())
+                                     
     filtered_df = df.copy()
 
     if colleges:
