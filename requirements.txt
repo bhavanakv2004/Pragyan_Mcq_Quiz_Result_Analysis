@@ -4,3 +4,4 @@ numpy
 openpyxl
 seaborn
 matplotlib
+reportlab
