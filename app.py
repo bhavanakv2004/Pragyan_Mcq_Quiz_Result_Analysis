@@ -221,14 +221,14 @@ if response_files and answer_files:
     all_students = []
     all_answers = []
 
-    # ---------------- RESPONSE FILES ---------------- #
-    for file in response_files:
+    # -------- RESPONSE FILES -------- #
+for file in response_files:
 
-        try:
+    try:
 
-            temp_df = load_file(file)
+        temp_df = load_file(file)
 
-           subject_name = (
+        subject_name = (
             file.name
             .split(".")[0]
             .replace("_student", "")
@@ -242,24 +242,23 @@ if response_files and answer_files:
             .upper()
         )
 
-            temp_df["Subject"] = subject_name
+        temp_df["Subject"] = subject_name
 
-            all_students.append(temp_df)
+        all_students.append(temp_df)
 
-        except Exception as e:
+    except Exception as e:
 
-            st.error(
-                f"❌ Error reading {file.name}: {e}"
-            )
+        st.error(
+            f"❌ Error reading {file.name}: {e}"
+        )
+    # -------- ANSWER FILES -------- #
+for file in answer_files:
 
-    # ---------------- ANSWER FILES ---------------- #
-    for file in answer_files:
+    try:
 
-        try:
+        ans_df = load_file(file)
 
-            ans_df = load_file(file)
-
-            subject_name = (
+        subject_name = (
             file.name
             .split(".")[0]
             .replace("_student", "")
@@ -273,15 +272,15 @@ if response_files and answer_files:
             .upper()
         )
 
-            ans_df["Subject"] = subject_name
+        ans_df["Subject"] = subject_name
 
-            all_answers.append(ans_df)
+        all_answers.append(ans_df)
 
-        except Exception as e:
+    except Exception as e:
 
-            st.error(
-                f"❌ Error reading {file.name}: {e}"
-            )
+        st.error(
+            f"❌ Error reading {file.name}: {e}"
+        )
 
     # ---------------- EMPTY CHECK ---------------- #
     if len(all_students) == 0:
