@@ -487,3 +487,53 @@ if response_files and answer_files:
     )
 
     st.pyplot(fig)
+    # ---------------- DOWNLOAD REPORTS ---------------- #
+    st.header("📥 Download Reports")
+    
+    # -------- LEADERBOARD DOWNLOAD -------- #
+    leaderboard_csv = leaderboard_df.to_csv(
+        index=False
+    ).encode("utf-8")
+    
+    st.download_button(
+        label="⬇️ Download Leaderboard",
+        data=leaderboard_csv,
+        file_name="leaderboard_report.csv",
+        mime="text/csv"
+    )
+    
+    # -------- QUESTION ANALYSIS DOWNLOAD -------- #
+    question_csv = q_analysis.to_csv(
+        index=False
+    ).encode("utf-8")
+    
+    st.download_button(
+        label="⬇️ Download Question Analysis",
+        data=question_csv,
+        file_name="question_analysis.csv",
+        mime="text/csv"
+    )
+    
+    # -------- ATTEMPT RATE DOWNLOAD -------- #
+    attempt_csv = attempt_df.to_csv(
+        index=False
+    ).encode("utf-8")
+    
+    st.download_button(
+        label="⬇️ Download Attempt Report",
+        data=attempt_csv,
+        file_name="attempt_report.csv",
+        mime="text/csv"
+    )
+    
+    # -------- COMPLETE REPORT DOWNLOAD -------- #
+    complete_csv = filtered_df.to_csv(
+        index=False
+    ).encode("utf-8")
+    
+    st.download_button(
+        label="⬇️ Download Complete Report",
+        data=complete_csv,
+        file_name="complete_report.csv",
+        mime="text/csv"
+    )
