@@ -100,118 +100,69 @@ if not st.session_state.logged_in:
                 "Password",
                 type="password"
             )
-
             confirm_pass = st.text_input(
                 "Confirm Password",
                 type="password"
             )
-
             if st.button("Register"):
-
                 if new_pass != confirm_pass:
-
                     st.error(
                         "❌ Passwords do not match"
                     )
-
                 else:
-
                     success, msg = register_user(
                         new_user,
                         new_pass
                     )
-
                     if success:
                         st.success(msg)
-
                     else:
                         st.error(msg)
 
         # -------- LOGIN -------- #
         else:
-
             st.subheader("🔐 Login")
-
             username = st.text_input(
                 "Username"
             )
-
             password = st.text_input(
                 "Password",
                 type="password"
             )
-
             if st.button("Login"):
-
                 valid = login_user(
                     username,
                     password
                 )
-
                 if valid:
-
                     st.session_state.logged_in = True
                     st.session_state.username = username
-
                     st.rerun()
-
                 else:
-
                     st.error(
                         "❌ Invalid Username or Password"
                     )
-
         st.markdown(
             '</div>',
             unsafe_allow_html=True
         )
-
     st.stop()
-
-# ---------------- SIDEBAR FILTERS ---------------- #
-st.sidebar.header("🔍 Filters")
-
-college_filter = st.sidebar.multiselect(
-    "Select College",
-    df["College"].unique()
-)
-
-dept_filter = st.sidebar.multiselect(
-    "Select Department",
-    df["Department"].unique()
-)
-
-subject_filter = st.sidebar.multiselect(
-    "Select Subject",
-    sorted(
-        set(
-            ",".join(df["Subject"])
-            .split(", ")
-        )
-    )
-)
 
 # ---------------- FILTER DATA ---------------- #
 filtered_df = df.copy()
-
 if college_filter:
-
     filtered_df = filtered_df[
         filtered_df["College"].isin(
             college_filter
         )
     ]
-
 if dept_filter:
-
     filtered_df = filtered_df[
         filtered_df["Department"].isin(
             dept_filter
         )
     ]
-
 if subject_filter:
-
     filtered_df = filtered_df[
         filtered_df["Subject"].apply(
             lambda x: any(
@@ -230,7 +181,6 @@ response_files = st.file_uploader(
     type=["csv", "xlsx"],
     accept_multiple_files=True
 )
-
 answer_files = st.file_uploader(
     "📂 Upload Answer Key Files",
     type=["csv", "xlsx"],
@@ -239,17 +189,13 @@ answer_files = st.file_uploader(
 
 # ---------------- PROCESS FILES ---------------- #
 if response_files and answer_files:
-
     all_students = []
     all_answers = []
 
     # -------- RESPONSE FILES -------- #
     for file in response_files:
-
         try:
-
             temp_df = load_file(file)
-
             subject_name = (
                 file.name
                 .split(".")[0]
@@ -258,24 +204,17 @@ if response_files and answer_files:
                 .replace("_answers", "")
                 .strip()
             )
-
             temp_df["Subject"] = subject_name
-
             all_students.append(temp_df)
-
         except Exception as e:
-
             st.error(
                 f"❌ Error reading {file.name}: {e}"
             )
 
     # -------- ANSWER FILES -------- #
     for file in answer_files:
-
         try:
-
             ans_df = load_file(file)
-
             subject_name = (
                 file.name
                 .split(".")[0]
@@ -284,32 +223,23 @@ if response_files and answer_files:
                 .replace("_answers", "")
                 .strip()
             )
-
             ans_df["Subject"] = subject_name
-
             all_answers.append(ans_df)
-
         except Exception as e:
-
             st.error(
                 f"❌ Error reading {file.name}: {e}"
             )
 
     # -------- EMPTY CHECK -------- #
     if len(all_students) == 0:
-
         st.warning(
             "⚠️ No valid student files uploaded"
         )
-
         st.stop()
-
     if len(all_answers) == 0:
-
         st.warning(
             "⚠️ No valid answer files uploaded"
         )
-
         st.stop()
 
     # -------- MERGE FILES -------- #
@@ -317,7 +247,6 @@ if response_files and answer_files:
         all_students,
         ignore_index=True
     )
-
     answer_df = pd.concat(
         all_answers,
         ignore_index=True
@@ -328,73 +257,77 @@ if response_files and answer_files:
         df,
         answer_df
     )
-
     if not valid:
-
         st.error(message)
-
         st.stop()
-
     st.success(message)
 
     # ---------------- SCORE ---------------- #
-    df = calculate_score(
-        df,
-        answer_df
+    raw_df, df = calculate_score(
+    df,
+    answer_df
     )
      # ---------------- SIDEBAR FILTERS ---------------- #
     st.sidebar.header("🔍 Filters")
-
     colleges = st.sidebar.multiselect("Select College", df["College"].unique())
     departments = st.sidebar.multiselect("Select Department", df["Department"].unique())
     students = st.sidebar.multiselect("Select Student", df["Name"].unique())
-    subject = st.sidebar.multiselect("Select Subject", df["Subject"].unique())
-                                     
+    subjects = st.sidebar.multiselect(
+    "Select Subject",
+    sorted(
+        set(
+            ",".join(df["Subject"])
+            .split(", ")
+        )
+    )
+)            
     filtered_df = df.copy()
-
     if colleges:
         filtered_df = filtered_df[filtered_df["College"].isin(colleges)]
     if departments:
         filtered_df = filtered_df[filtered_df["Department"].isin(departments)]
-    if students:
-        filtered_df = filtered_df[filtered_df["Name"].isin(students)]
-
+    if subjects:
+    filtered_df = filtered_df[
+        filtered_df["Subject"].apply(
+            lambda x: any(
+                sub in x
+                for sub in subjects
+            )
+        )
+    ]
 
     # ---------------- KPI ---------------- #
     st.header("📌 Key Metrics")
-
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Students",len(df))
-    col2.metric("Average Score",round(df["Score"].mean(), 2))
-    col3.metric("Highest Score",df["Score"].max())
-    col4.metric("Lowest Score",df["Score"].min())
+    col1.metric("Total Students",len(filtered_df))
+    col2.metric("Average Score",round(filtered_df["Score"].mean(), 2))
+    col3.metric("Highest Score",filtered_df["Score"].max())
+    col4.metric("Lowest Score",filtered_df["Score"].min())
 
     # ---------------- LEADERBOARD ---------------- #
     st.header("🏆 Leaderboard")
-
     leaderboard_df = leaderboard(filtered_df)
-
     st.dataframe(leaderboard_df)
 
     # ---------------- QUESTION ANALYSIS ---------------- #
     st.header("❓ Question Analysis")
 
-    q_analysis = question_analysis(df,answer_df)
+    q_analysis = question_analysis(
+    raw_df,
+    answer_df
+    )
     st.dataframe(q_analysis)
 
     # ---------------- ATTEMPT RATE ---------------- #
     st.header("📌 Attempt Rate")
-
     attempt_df = attempt_rate(
-        df,
-        answer_df
+    raw_df,
+    answer_df
     )
     st.dataframe(attempt_df)
       # ---------------- DEPARTMENT PERFORMANCE ---------------- #
     st.header("🏢 Department Performance")
-
     col1, col2 = st.columns(2)
-
     with col1:
         dept = department_performance(filtered_df)
         fig, ax = plt.subplots()
@@ -408,16 +341,9 @@ if response_files and answer_files:
         sns.heatmap(pivot, annot=True, cmap="coolwarm", ax=ax)
         st.pyplot(fig)
 
-    # Department Insights Table
-    st.subheader("📊 Department Insights")
-    dept_df = filtered_df.groupby("Department")["Score"].agg(["mean", "count"])
-    st.dataframe(dept_df)
-
     # ---------------- COLLEGE PERFORMANCE ---------------- #
     st.header("🏫 College Ranking")
-
     college_df = filtered_df.groupby("College")["Score"].mean().sort_values(ascending=False)
-
     fig, ax = plt.subplots()
     college_df.plot(kind="barh", ax=ax)
     ax.set_title("College Performance")
@@ -425,18 +351,14 @@ if response_files and answer_files:
 
     # ---------------- HEATMAP ---------------- #
     st.header("🔥 Department Heatmap")
-
-    heatmap_df = heatmap_data(df)
-
+    heatmap_df = heatmap_data(filtered_df)
     fig, ax = plt.subplots(
         figsize=(8, 5)
     )
-
     sns.heatmap(
         heatmap_df,
         annot=True,
         cmap="coolwarm",
         ax=ax
     )
-
     st.pyplot(fig)
